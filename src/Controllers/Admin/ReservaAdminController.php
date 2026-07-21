@@ -82,6 +82,11 @@ class ReservaAdminController extends Controller
             $this->error('Solo se puede registrar el saldo de reservas con el adelanto ya confirmado.', 409);
         }
 
+        // Evita registrar el saldo dos veces para la misma reserva
+        if (Pago::existeSaldoAprobadoParaReserva($reservaId)) {
+            $this->error('El saldo ya fue registrado previamente para esta reserva.', 409);
+        }
+
         $this->handleValidation(fn () => (new Validator($input))
             ->required('metodo', 'Método')
             ->in('metodo', ['yape', 'plin', 'transferencia', 'efectivo'], 'Método')
@@ -101,6 +106,8 @@ class ReservaAdminController extends Controller
                 ->execute(['admin_id' => $admin['id']]);
 
             Reserva::actualizarEstado($reservaId, 'pago_completo');
+            // Marca el espacio como ocupado al confirmar el pago completo
+            $pdo->prepare('UPDATE espacios SET estado = "ocupado" WHERE id = :id')->execute(['id' => $reserva['espacio_id']]);
             ReservaEstadoHistorial::registrar($pdo, $reservaId, $reserva['estado'], 'pago_completo', 'admin', $admin['id'], 'Saldo del 50% pagado en el establecimiento');
             $pdo->commit();
         } catch (\Throwable $e) {

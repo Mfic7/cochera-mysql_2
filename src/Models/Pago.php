@@ -78,4 +78,13 @@ class Pago
         $stmt->execute(['desde' => $desde, 'hasta' => $hasta]);
         return $stmt->fetchAll();
     }
+
+    public static function existeSaldoAprobadoParaReserva(int $reservaId): bool
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT COUNT(*) AS n FROM pagos WHERE reserva_id = :id AND tipo = 'saldo' AND estado = 'aprobado'"
+        );
+        $stmt->execute(['id' => $reservaId]);
+        return (int) $stmt->fetch()['n'] > 0;
+    }
 }

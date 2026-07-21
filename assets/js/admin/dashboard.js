@@ -179,7 +179,14 @@ const AdminDashboard = (() => {
                     await AdminApi.pagoSaldo(id, null, metodo);
                     toast('Saldo registrado con ' + metodo + '. Reserva completada.');
                     closeModal();
-                    loadReservas();
+                    await loadReservas();
+                    // Refresca pagos y cuadrícula para reflejar inmediatamente la operación
+                    try {
+                        await loadPagos();
+                        const ocup = await AdminApi.ocupacion();
+                        const grid = document.getElementById('admin-parking-grid');
+                        if (grid && ocup?.espacios) renderAdminParkingGrid(grid, ocup.espacios);
+                    } catch (e) { /* no crítico */ }
                 } catch (e) {
                     button.disabled = false;
                     toast(e.data?.error || 'No se pudo registrar el saldo.');
@@ -232,7 +239,13 @@ const AdminDashboard = (() => {
         try {
             await AdminApi.revisarPago(id, accion, motivo);
             toast(accion === 'aprobar' ? 'Pago aprobado.' : 'Pago rechazado.');
-            loadPagos();
+            await loadPagos();
+            // Refresca la cuadrícula de ocupación en dashboard si existe
+            try {
+                const ocup = await AdminApi.ocupacion();
+                const grid = document.getElementById('admin-parking-grid');
+                if (grid && ocup?.espacios) renderAdminParkingGrid(grid, ocup.espacios);
+            } catch (e) { /* no crítico */ }
         } catch (e) { toast(e.data?.error || 'No se pudo procesar.'); }
     }
 
@@ -276,10 +289,16 @@ const AdminDashboard = (() => {
             const id = b.dataset.guardarEspacio;
             const estado = document.querySelector(`[data-estado-espacio="${id}"]`).value;
             try {
-                await AdminApi.actualizarEspacio(id, { estado });
-                toast('Espacio actualizado.');
-                await loadEspacios();
-            } catch (e) { toast(e.data?.error || 'No se pudo actualizar.'); }
+                    await AdminApi.actualizarEspacio(id, { estado });
+                    toast('Espacio actualizado.');
+                    await loadEspacios();
+                    // Actualiza la cuadrícula de ocupación en el dashboard si está presente
+                    try {
+                        const ocup = await AdminApi.ocupacion();
+                        const grid = document.getElementById('admin-parking-grid');
+                        if (grid && ocup?.espacios) renderAdminParkingGrid(grid, ocup.espacios);
+                    } catch (e) { /* no crítico */ }
+                } catch (e) { toast(e.data?.error || 'No se pudo actualizar.'); }
         }));
 
         document.querySelectorAll('[data-eliminar-espacio]').forEach((b) => b.addEventListener('click', async () => {

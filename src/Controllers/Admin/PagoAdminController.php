@@ -69,9 +69,19 @@ class PagoAdminController extends Controller
         $pdo->beginTransaction();
         try {
             if ($input['accion'] === 'aprobar') {
+                // Evita aprobar un segundo 'saldo' si ya existe uno aprobado
+                if ($pago['tipo'] === 'saldo' && \App\Models\Pago::existeSaldoAprobadoParaReserva((int) $pago['reserva_id'])) {
+                    $this->error('Ya existe un pago de tipo saldo aprobado para esta reserva.', 409);
+                }
+
                 Pago::actualizarRevision((int) $id, 'aprobado', $admin['id']);
                 $nuevoEstado = $pago['tipo'] === 'adelanto' ? 'adelanto_pagado' : 'pago_completo';
                 Reserva::actualizarEstado((int) $reserva['id'], $nuevoEstado);
+                // Si es pago completo, marcar el espacio como ocupado
+                if ($nuevoEstado === 'pago_completo') {
+                    $pdo->prepare('UPDATE espacios SET estado = "ocupado" WHERE id = :id')
+                        ->execute(['id' => $reserva['espacio_id']]);
+                }
                 ReservaEstadoHistorial::registrar($pdo, (int) $reserva['id'], $reserva['estado'], $nuevoEstado, 'admin', $admin['id'], 'Pago aprobado por admin');
             } else {
                 $motivo = trim($input['motivo'] ?? 'Comprobante rechazado');
