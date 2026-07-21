@@ -146,10 +146,14 @@ table tr:last-child td { border-bottom: none; }
 }
 
 .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.toolbar input, .toolbar select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-.btn-sm { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-size: 12px; cursor: pointer; }
+.toolbar input, .toolbar select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; min-width: 250px; width: 100%; max-width: 420px; }
+.btn-sm { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: #fff; font-size: 13px; cursor: pointer; transition: background .2s, transform .2s; }
+.btn-sm:hover { background: #f7f8fa; transform: translateY(-1px); }
 .btn-sm.approve { background: #dcfce7; border-color: #86efac; color: #166534; }
 .btn-sm.reject { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+.btn-sm.btn-save { background: #eef6ff; border-color: #cfe0ff; color: #1d4ed8; }
+.btn-sm.btn-delete { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; margin-left: 8px; }
+.actions-cell { display: flex; gap: 8px; justify-content: flex-end; }
 
 .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center;
@@ -159,6 +163,12 @@ table tr:last-child td { border-bottom: none; }
 .modal h3 { margin-top: 0; }
 .modal img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); }
 .modal-close { float: right; cursor: pointer; border: none; background: none; font-size: 18px; }
+.modal-note { margin: 0 0 16px; padding: 14px 16px; background: #eef2ff; border-left: 4px solid #6366f1; border-radius: 12px; color: #1f2937; font-weight: 600; }
+.modal-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.modal-grid .btn-sm { width: 100%; }
+.btn-strong { background: #4338ca; color: #fff; border-color: transparent; }
+.btn-strong:hover { background: #3730a3; }
+.modal-footer { margin: 0; color: var(--muted); font-size: 13px; }
 .form-field { margin-bottom: 12px; }
 .form-field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
 .form-field input, .form-field select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }

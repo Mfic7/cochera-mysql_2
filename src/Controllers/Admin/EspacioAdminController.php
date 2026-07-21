@@ -67,4 +67,13 @@ class EspacioAdminController extends Controller
 
         $this->json(['ok' => true]);
     }
+
+    public function eliminar(string $id): void
+    {
+        $this->requireAdmin();
+        $this->requireCsrf();
+        $stmt = Database::connection()->prepare('DELETE FROM espacios WHERE id = :id');
+        $stmt->execute(['id' => (int) $id]);
+        $this->json(['ok' => true]);
+    }
 }

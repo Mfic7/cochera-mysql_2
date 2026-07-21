@@ -12,8 +12,8 @@ return [
         'charset' => 'utf8mb4',
     ],
     // Ruta base de la app tal como se ve desde el navegador, sin slash final.
-    // Ej: si accedes por http://localhost/Coherv2/ -> '/Coherv2'
+    // Ej: si accedes por http://localhost/cochera-mysql_2/ -> '/cochera-mysql_2'
     // Con ngrok apuntando directo a la raíz del vhost, dejar '' (vacío).
-    'app_base_path' => '/Coherv2',
+    'app_base_path' => '/cochera-mysql_2',
     'session_name' => 'micochera_admin',
 ];

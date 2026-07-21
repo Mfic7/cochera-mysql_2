@@ -16,21 +16,28 @@ class ReservaController extends Controller
     {
         $input = $this->input();
 
-        $this->handleValidation(function () use ($input) {
+        // handleValidation() debe capturar ValidationException y responder 422
+        // con los errores; asumo que retorna el array validado por Validator::validate().
+        $data = $this->handleValidation(function () use ($input) {
             return (new Validator($input))
                 ->required('espacio_id', 'Espacio')
                 ->required('fecha_hora_inicio', 'Fecha y hora')
                 ->required('horas_estimadas', 'Horas estimadas')
                 ->numeric('horas_estimadas', 'Horas estimadas')
                 ->required('cliente_nombre', 'Nombre')
+                ->nombreCompleto('cliente_nombre', 'Nombre')
                 ->required('cliente_celular', 'Celular')
+                ->celularPeru('cliente_celular', 'Celular')
                 ->validate();
         });
 
-        $input['ip_origen'] = $_SERVER['REMOTE_ADDR'] ?? null;
+        // Normaliza nombre y celular antes de persistir
+        $data['cliente_nombre'] = trim((string) $data['cliente_nombre']);
+        $data['cliente_celular'] = preg_replace('/[\s\-]/', '', (string) $data['cliente_celular']);
+        $data['ip_origen'] = $_SERVER['REMOTE_ADDR'] ?? null;
 
         try {
-            $reserva = ReservaService::crear($input);
+            $reserva = ReservaService::crear($data);
             $this->json($reserva, 201);
         } catch (ReservaConflictException $e) {
             $this->error($e->getMessage(), 409);

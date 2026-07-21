@@ -29,8 +29,9 @@ class PagoController extends Controller
             $this->error('Esta reserva ya no admite un nuevo comprobante en su estado actual.', 409);
         }
 
-        $metodo = $_POST['metodo'] ?? '';
-        $numeroOperacion = trim($_POST['numero_operacion'] ?? '');
+        $input = $this->input();
+        $metodo = $input['metodo'] ?? '';
+        $numeroOperacion = trim((string) ($input['numero_operacion'] ?? ''));
         if (!in_array($metodo, self::METODOS_VALIDOS, true)) {
             $this->error('Método de pago inválido', 422);
         }

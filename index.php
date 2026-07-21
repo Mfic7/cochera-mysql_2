@@ -13,10 +13,11 @@ $basePath = $config['app_base_path'];
 <body>
 <header class="topbar">
     <div class="brand">
-        <span class="brand-badge">P</span>
+        <img id="brand-logo" src="" alt="Logo" style="display:none;width:40px;height:40px;object-fit:cover;border-radius:10px;margin-right:0.75rem;">
+        <span class="brand-badge" id="brand-badge">P</span>
         <div>
-            <h1>Mi Cochera</h1>
-            <p>Reserva tu espacio seguro</p>
+            <h1 id="brand-name">Mi Cochera</h1>
+            <p id="brand-tagline">Reserva tu espacio seguro</p>
         </div>
     </div>
     <div class="topbar-info" id="topbar-info">

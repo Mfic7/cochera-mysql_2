@@ -20,6 +20,7 @@ class MetodoPagoAdminController extends Controller
         $this->requireAdmin();
         $this->requireCsrf();
         $input = $this->input();
+        $input = array_map(static fn ($value) => is_array($value) ? $value[0] ?? '' : $value, $input);
 
         if (empty($input['titular']) || empty($input['numero_cuenta'])) {
             $this->error('Titular y número de cuenta son obligatorios', 422);

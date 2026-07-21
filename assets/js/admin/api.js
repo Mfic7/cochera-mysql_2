@@ -54,6 +54,7 @@ const AdminApi = (() => {
         espacios: () => request('/admin/espacios'),
         crearEspacio: (data) => request('/admin/espacios', { method: 'POST', body: JSON.stringify(data) }),
         actualizarEspacio: (id, data) => request(`/admin/espacios/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+        eliminarEspacio: (id) => request(`/admin/espacios/${id}`, { method: 'DELETE' }),
 
         metodosPago: () => request('/admin/metodos-pago'),
         actualizarMetodoPago: (tipo, data) => request(`/admin/metodos-pago/${tipo}`, { method: 'PATCH', body: JSON.stringify(data) }),

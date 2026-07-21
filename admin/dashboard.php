@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/../src/Autoload.php';
 use App\Auth\AdminAuth;
+use App\Models\Configuracion;
 
 $config = require __DIR__ . '/../config/config.php';
 $basePath = $config['app_base_path'];
@@ -10,21 +11,28 @@ if (!AdminAuth::check()) {
     exit;
 }
 $admin = AdminAuth::user();
+$nombreNegocio = Configuracion::get('nombre_negocio', 'Mi Cochera');
+$logoNegocio = Configuracion::get('logo_path', null);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi Cochera — Panel de administración</title>
+<title><?= htmlspecialchars($nombreNegocio) ?> — Panel de administración</title>
 <link rel="stylesheet" href="<?= $basePath ?>/assets/css/admin.css">
 </head>
 <body>
 <div class="shell">
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-badge">P</div>
-            <div><h1>Mi Cochera</h1><p>Panel de Administración</p></div>
+            <?php
+                $logoSrc = $logoNegocio
+                    ? $basePath . '/storage/' . htmlspecialchars($logoNegocio)
+                    : 'data:image/svg+xml;utf8,' . rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" rx="8" fill="%23f59e0b"/><text x="50%" y="55%" font-family="Arial" font-size="20" fill="white" text-anchor="middle" dominant-baseline="middle">P</text></svg>');
+            ?>
+            <img class="brand-badge" id="brand-logo" src="<?= $logoSrc ?>" alt="Logo">
+            <div><h1 id="brand-nombre"><?= htmlspecialchars($nombreNegocio) ?></h1><p>Panel de Administración</p></div>
         </div>
         <nav id="nav">
             <div class="nav-item active" data-view="dashboard">🏠 Dashboard</div>
@@ -144,6 +152,9 @@ $admin = AdminAuth::user();
         <!-- Espacios -->
         <section class="view" id="view-espacios">
             <div class="content-header"><div><h2>Espacios</h2><p>Administra el estado de cada espacio de la cochera</p></div></div>
+            <div class="toolbar">
+                <input type="search" id="buscador-espacios" placeholder="Buscar por código, zona o estado">
+            </div>
             <div class="panel">
                 <div class="table-wrap"><table id="tabla-espacios">
                     <thead><tr><th>Código</th><th>Zona</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -162,7 +173,14 @@ $admin = AdminAuth::user();
         <section class="view" id="view-configuracion">
             <div class="content-header"><div><h2>Configuración</h2><p>Datos generales del negocio</p></div></div>
             <div class="panel" style="max-width:480px">
-                <form id="form-configuracion">
+                <form id="form-configuracion" enctype="multipart/form-data">
+                    <div class="form-field">
+                        <label>Logo del negocio</label>
+                        <div class="logo-preview-row">
+                            <img id="logo-preview" src="<?= $logoNegocio ? $basePath . '/storage/' . htmlspecialchars($logoNegocio) : '' ?>" style="<?= $logoNegocio ? '' : 'display:none' ?>" alt="Logo actual" width="48" height="48">
+                            <input type="file" name="logo" id="input-logo" accept="image/png,image/jpeg,image/webp">
+                        </div>
+                    </div>
                     <div class="form-field"><label>Nombre del negocio</label><input name="nombre_negocio"></div>
                     <div class="form-field"><label>Dirección</label><input name="direccion"></div>
                     <div class="form-field"><label>Horario</label><input name="horario"></div>

@@ -155,12 +155,37 @@ const AdminDashboard = (() => {
     }
 
     async function registrarSaldo(id) {
-        if (!confirm('¿Confirmar que el cliente pagó el saldo restante en efectivo/otro método presencial?')) return;
-        try {
-            await AdminApi.pagoSaldo(id, null, 'efectivo');
-            toast('Saldo registrado, reserva completada.');
-            loadReservas();
-        } catch (e) { toast(e.data?.error || 'No se pudo registrar el saldo.'); }
+        openSaldoModal(id);
+    }
+
+    function openSaldoModal(id) {
+        const horaActual = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+        openModal(`
+            <h3>Registrar saldo restante <button class="modal-close" data-close>×</button></h3>
+            <p class="modal-note">Selecciona el método con el que el cliente pagó. Esta acción se registrará inmediatamente a las ${horaActual}.</p>
+            <div class="modal-grid">
+                <button class="btn-sm btn-strong" data-metodo="yape">Yape</button>
+                <button class="btn-sm btn-strong" data-metodo="plin">Plin</button>
+                <button class="btn-sm btn-strong" data-metodo="transferencia">Transferencia</button>
+            </div>
+            <p class="modal-footer">Si el cliente pagó en efectivo o presencial, elige el método que mejor describa la transacción.</p>
+        `);
+
+        document.querySelectorAll('[data-metodo]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const metodo = button.dataset.metodo;
+                button.disabled = true;
+                try {
+                    await AdminApi.pagoSaldo(id, null, metodo);
+                    toast('Saldo registrado con ' + metodo + '. Reserva completada.');
+                    closeModal();
+                    loadReservas();
+                } catch (e) {
+                    button.disabled = false;
+                    toast(e.data?.error || 'No se pudo registrar el saldo.');
+                }
+            });
+        });
     }
 
     async function cancelarReserva(id) {
@@ -212,11 +237,28 @@ const AdminDashboard = (() => {
     }
 
     // ---------- Espacios ----------
+    let espaciosCache = [];
+
     async function loadEspacios() {
-        const rows = await AdminApi.espacios();
-        document.querySelector('#tabla-espacios tbody').innerHTML = rows.map((e) => `
+        espaciosCache = await AdminApi.espacios();
+        renderEspacios(espaciosCache);
+
+        const search = document.getElementById('buscador-espacios');
+        if (search) {
+            search.addEventListener('input', () => renderEspacios(espaciosCache, search.value));
+        }
+    }
+
+    function renderEspacios(rows, filtro = '') {
+        const term = filtro.trim().toLowerCase();
+        const visibles = term ? rows.filter((e) =>
+            `${e.codigo} ${e.zona || ''} ${e.estado}`.toLowerCase().includes(term)
+        ) : rows;
+
+        document.querySelector('#tabla-espacios tbody').innerHTML = visibles.map((e) => `
             <tr>
-                <td>${esc(e.codigo)}</td><td>${esc(e.zona || '—')}</td>
+                <td>${esc(e.codigo)}</td>
+                <td>${esc(e.zona || '—')}</td>
                 <td>
                     <select data-estado-espacio="${e.id}">
                         <option value="disponible" ${e.estado === 'disponible' ? 'selected' : ''}>Disponible</option>
@@ -224,7 +266,10 @@ const AdminDashboard = (() => {
                         <option value="mantenimiento" ${e.estado === 'mantenimiento' ? 'selected' : ''}>Mantenimiento</option>
                     </select>
                 </td>
-                <td><button class="btn-sm" data-guardar-espacio="${e.id}">Guardar</button></td>
+                <td class="actions-cell">
+                    <button class="btn-sm btn-save" data-guardar-espacio="${e.id}">Guardar</button>
+                    <button class="btn-sm btn-delete" data-eliminar-espacio="${e.id}">Eliminar</button>
+                </td>
             </tr>`).join('');
 
         document.querySelectorAll('[data-guardar-espacio]').forEach((b) => b.addEventListener('click', async () => {
@@ -233,7 +278,19 @@ const AdminDashboard = (() => {
             try {
                 await AdminApi.actualizarEspacio(id, { estado });
                 toast('Espacio actualizado.');
-            } catch (e) { toast('No se pudo actualizar.'); }
+                await loadEspacios();
+            } catch (e) { toast(e.data?.error || 'No se pudo actualizar.'); }
+        }));
+
+        document.querySelectorAll('[data-eliminar-espacio]').forEach((b) => b.addEventListener('click', async () => {
+            const id = b.dataset.eliminarEspacio;
+            if (!confirm('¿Eliminar este espacio? Esta acción no se puede deshacer.')) return;
+            try {
+                await AdminApi.eliminarEspacio(id);
+                toast('Espacio eliminado.');
+                espaciosCache = espaciosCache.filter((e) => e.id !== Number(id));
+                renderEspacios(espaciosCache, document.getElementById('buscador-espacios')?.value || '');
+            } catch (e) { toast(e.data?.error || 'No se pudo eliminar.'); }
         }));
     }
 
@@ -260,10 +317,14 @@ const AdminDashboard = (() => {
             try {
                 if (qrInput.files[0]) {
                     const fd = new FormData(form);
-                    await fetch(`${window.APP_BASE}/api/index.php/admin/metodos-pago/${tipo}`, {
-                        method: 'PATCH', body: fd, credentials: 'same-origin',
+                    const r = await fetch(`${window.APP_BASE}/api/index.php/admin/metodos-pago/${tipo}`, {
+                        method: 'POST', body: fd, credentials: 'same-origin',
                         headers: { 'X-CSRF-Token': sessionStorage.getItem('csrf_token') || '' },
                     });
+                    if (!r.ok) {
+                        const errData = await r.json().catch(() => ({}));
+                        throw { data: errData };
+                    }
                 } else {
                     await AdminApi.actualizarMetodoPago(tipo, Object.fromEntries(new FormData(form).entries()));
                 }
@@ -279,13 +340,53 @@ const AdminDashboard = (() => {
         Object.entries(cfg).forEach(([k, v]) => { if (form[k]) form[k].value = v; });
     }
 
+    document.getElementById('input-logo').addEventListener('change', (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        const preview = document.getElementById('logo-preview');
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = '';
+    });
+
     document.getElementById('form-configuracion').addEventListener('submit', async (ev) => {
         ev.preventDefault();
-        const data = Object.fromEntries(new FormData(ev.target).entries());
+        const form = ev.target;
+        const logoInput = document.getElementById('input-logo');
+
         try {
-            await AdminApi.actualizarConfiguracion(data);
+            let resp;
+            if (logoInput.files[0]) {
+                const fd = new FormData(form);
+                const r = await fetch(`${window.APP_BASE}/api/index.php/admin/configuracion`, {
+                    method: 'POST', body: fd, credentials: 'same-origin',
+                    headers: { 'X-CSRF-Token': sessionStorage.getItem('csrf_token') || '' },
+                });
+                resp = await r.json().catch(() => ({}));
+                if (!r.ok) throw { data: resp };
+            } else {
+                const data = Object.fromEntries(new FormData(form).entries());
+                delete data.logo;
+                resp = await AdminApi.actualizarConfiguracion(data);
+            }
+
+            const nombreActualizado = resp?.nombre_negocio || form.nombre_negocio.value;
+            const logoActualizado = resp?.logo_path;
+
+            // Refleja los cambios al instante en el sidebar y el título de la pestaña,
+            // sin necesidad de recargar la página.
+            const brandNombre = document.getElementById('brand-nombre');
+            if (brandNombre) brandNombre.textContent = nombreActualizado;
+            document.title = nombreActualizado + ' — Panel de administración';
+
+            if (logoActualizado) {
+                const logoImg = document.getElementById('brand-logo');
+                if (logoImg) logoImg.src = `${window.APP_BASE}/storage/${logoActualizado}?v=${Date.now()}`;
+            }
+
             toast('Configuración guardada.');
-        } catch (e) { toast('No se pudo guardar.'); }
+        } catch (e) {
+            toast(e.data?.error || 'No se pudo guardar.');
+        }
     });
 
     // ---------- Modal ----------

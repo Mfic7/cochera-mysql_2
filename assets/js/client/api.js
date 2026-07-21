@@ -4,6 +4,7 @@ const Api = (() => {
     async function request(path, options = {}) {
         const res = await fetch(base + path, {
             ...options,
+            credentials: 'same-origin',
             headers: options.body instanceof FormData
                 ? options.headers
                 : { 'Content-Type': 'application/json', ...(options.headers || {}) },

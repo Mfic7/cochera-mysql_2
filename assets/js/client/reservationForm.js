@@ -39,6 +39,21 @@ const ReservationForm = (() => {
         el['info-telefono'].textContent = state.config.telefono;
         el['hold-minutes'].textContent = state.config.hold_minutes;
 
+        const brandName = document.getElementById('brand-name');
+        const brandLogo = document.getElementById('brand-logo');
+        const brandBadge = document.getElementById('brand-badge');
+        if (brandName) {
+            brandName.textContent = state.config.nombre_negocio || brandName.textContent;
+        }
+        if (brandLogo && state.config.logo_path) {
+            brandLogo.src = `${window.APP_BASE}/storage/${state.config.logo_path}`;
+            brandLogo.style.display = '';
+        }
+        if (brandBadge && state.config.logo_path) {
+            brandBadge.style.display = 'none';
+        }
+        document.title = (state.config.nombre_negocio || 'Mi Cochera') + ' — Reserva tu espacio';
+
         state.metodosPago = await Api.metodosPago();
 
         await reloadGrid();
@@ -47,6 +62,26 @@ const ReservationForm = (() => {
             if (!state.reserva) reloadGrid();
             actualizarResumen();
         }));
+
+        // Bloquea caracteres inválidos mientras el usuario escribe
+        el['cliente-nombre'].addEventListener('input', () => {
+            filtrarSoloLetras(el['cliente-nombre']);
+            const err = validarNombre(el['cliente-nombre'].value);
+            marcarCampo(el['cliente-nombre'], err);
+        });
+        el['cliente-celular'].addEventListener('input', () => {
+            formatearCelular(el['cliente-celular']);
+            const err = validarCelular(el['cliente-celular'].value);
+            marcarCampo(el['cliente-celular'], err);
+        });
+        // Bloqueo adicional a nivel de tecla (evita pegar/teclear símbolos raros)
+        el['cliente-nombre'].addEventListener('keypress', (e) => {
+            if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key)) e.preventDefault();
+        });
+        el['cliente-celular'].addEventListener('keypress', (e) => {
+            if (!/[0-9]/.test(e.key)) e.preventDefault();
+        });
+
         el['btn-reservar'].addEventListener('click', crearReserva);
         el['btn-enviar-comprobante'].addEventListener('click', enviarComprobante);
     }
@@ -92,13 +127,62 @@ const ReservationForm = (() => {
         el['btn-reservar'].disabled = disabled;
     }
 
+    // --- Validaciones ---
+
+    function validarNombre(nombre) {
+        const valor = nombre.trim();
+        if (!valor) return 'Ingresa tu nombre completo.';
+        if (valor.length < 3) return 'El nombre debe tener al menos 3 caracteres.';
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) return 'El nombre solo puede contener letras.';
+        if (valor.split(/\s+/).filter(Boolean).length < 2) return 'Ingresa nombre y apellido.';
+        return null;
+    }
+
+    function validarCelular(celular) {
+        const limpio = celular.replace(/[\s-]/g, '');
+        if (!limpio) return 'Ingresa tu número de celular.';
+        if (!/^9\d{8}$/.test(limpio)) return 'Ingresa un celular válido de 9 dígitos (ej. 987654321).';
+        return null;
+    }
+
+    function formatearCelular(input) {
+        const limpio = input.value.replace(/\D/g, '').slice(0, 9);
+        input.value = limpio.replace(/(\d{3})(\d{3})(\d{0,3})/, (m, a, b, c) =>
+            c ? `${a} ${b} ${c}` : b ? `${a} ${b}` : a
+        );
+    }
+
+    function filtrarSoloLetras(input) {
+        const cursor = input.selectionStart;
+        const limpio = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+        if (limpio !== input.value) {
+            input.value = limpio;
+            input.setSelectionRange(cursor - 1, cursor - 1);
+        }
+    }
+
+    function marcarCampo(input, error) {
+        input.style.borderColor = error ? '#e53e3e' : '';
+    }
+
+    // --- Crear reserva ---
+
     async function crearReserva() {
         hideError();
         if (!state.selectedEspacio) return showError('Selecciona un espacio disponible.');
+
         const nombre = el['cliente-nombre'].value.trim();
         const celular = el['cliente-celular'].value.trim();
-        if (!nombre) return showError('Ingresa tu nombre completo.');
-        if (!celular) return showError('Ingresa tu número de celular.');
+
+        const errNombre = validarNombre(nombre);
+        marcarCampo(el['cliente-nombre'], errNombre);
+        if (errNombre) return showError(errNombre);
+
+        const errCelular = validarCelular(celular);
+        marcarCampo(el['cliente-celular'], errCelular);
+        if (errCelular) return showError(errCelular);
+
+        const celularLimpio = celular.replace(/[\s-]/g, '');
 
         el['btn-reservar'].disabled = true;
         el['btn-reservar'].textContent = 'Reservando…';
@@ -109,7 +193,7 @@ const ReservationForm = (() => {
                 fecha_hora_inicio: `${el.fecha.value} ${el.hora.value}:00`,
                 horas_estimadas: Number(el.horas.value),
                 cliente_nombre: nombre,
-                cliente_celular: celular,
+                cliente_celular: celularLimpio,
             };
             const reserva = await Api.crearReserva(payload);
             state.reserva = reserva;
@@ -124,6 +208,8 @@ const ReservationForm = (() => {
                 showError('Este espacio ya no está disponible, elige otro.');
                 state.selectedEspacio = null;
                 await reloadGrid();
+            } else if (e.status === 422 && e.message) {
+                showError(e.message);
             } else {
                 showError('No se pudo crear la reserva. Intenta nuevamente.');
             }

@@ -4,7 +4,7 @@
 // así que ESTE SCRIPT NO ES NECESARIO PARA EL FUNCIONAMIENTO CORRECTO.
 // Solo es útil como limpieza periódica si se desea programar en Windows Task Scheduler:
 //   Programa: C:\xampp\php\php.exe
-//   Argumentos: C:\xampp\htdocs\Coherv2\scripts\expire_holds.php
+//   Argumentos: C:\xampp\htdocs\cochera-mysql_2\scripts\expire_holds.php
 //   Frecuencia sugerida: cada 1 minuto
 
 require __DIR__ . '/../src/Autoload.php';

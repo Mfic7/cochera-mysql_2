@@ -48,9 +48,12 @@ $router->patch('admin/pagos/{id}', fn ($id) => (new PagoAdminController())->revi
 $router->get('admin/espacios', fn () => (new EspacioAdminController())->listar());
 $router->post('admin/espacios', fn () => (new EspacioAdminController())->crear());
 $router->patch('admin/espacios/{id}', fn ($id) => (new EspacioAdminController())->actualizar($id));
+$router->delete('admin/espacios/{id}', fn ($id) => (new EspacioAdminController())->eliminar($id));
 
 $router->get('admin/metodos-pago', fn () => (new MetodoPagoAdminController())->listar());
 $router->patch('admin/metodos-pago/{tipo}', fn ($tipo) => (new MetodoPagoAdminController())->actualizar($tipo));
+$router->post('admin/metodos-pago/{tipo}', fn ($tipo) => (new MetodoPagoAdminController())->actualizar($tipo));
 
 $router->get('admin/configuracion', fn () => (new AdminConfiguracionController())->ver());
 $router->patch('admin/configuracion', fn () => (new AdminConfiguracionController())->actualizar());
+$router->post('admin/configuracion', fn () => (new AdminConfiguracionController())->actualizar());

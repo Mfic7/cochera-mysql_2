@@ -7,8 +7,8 @@ y exponerse por ngrok para demos.
 ## Requisitos
 
 - XAMPP con Apache + PHP 8.2+ + MariaDB (ya incluido en este entorno).
-- Proyecto ubicado en `c:\xampp\htdocs\Coherv2` (para que la URL sea
-  `http://localhost/Coherv2/...`).
+- Proyecto ubicado en `c:\xampp\htdocs\cochera-mysql_2` (para que la URL sea
+  `http://localhost/cochera-mysql_2/...`).
 
 ## Puesta en marcha
 
@@ -24,8 +24,8 @@ y exponerse por ngrok para demos.
 3. **Configurar credenciales**, si son distintas a las de una instalación
    XAMPP estándar (usuario `root` sin contraseña): editar
    `config/config.php` (ya creado a partir de `config/config.example.php`).
-4. Abrir `http://localhost/Coherv2/` — página de reserva del cliente.
-5. Abrir `http://localhost/Coherv2/admin/login.php` — panel de administración.
+4. Abrir `http://localhost/cochera-mysql_2/` — página de reserva del cliente.
+5. Abrir `http://localhost/cochera-mysql_2/admin/login.php` — panel de administración.
 
 ### Credenciales de administrador por defecto
 
@@ -45,10 +45,10 @@ C:\xampp\php\php.exe -r "echo password_hash('tu-nueva-clave', PASSWORD_DEFAULT);
 ngrok http 80
 ```
 
-Luego visita la URL de ngrok seguida de `/Coherv2/` (ej.
-`https://xxxx.ngrok-free.app/Coherv2/`). No hace falta cambiar nada en el
+Luego visita la URL de ngrok seguida de `/cochera-mysql_2/` (ej.
+`https://xxxx.ngrok-free.app/cochera-mysql_2/`). No hace falta cambiar nada en el
 código: `config/config.php` → `app_base_path` ya asume que el proyecto vive
-bajo `/Coherv2`, y todas las llamadas a la API se arman a partir de eso tanto
+bajo `/cochera-mysql_2`, y todas las llamadas a la API se arman a partir de eso tanto
 en `localhost` como detrás del túnel.
 
 ## Qué incluye este MVP
@@ -89,3 +89,9 @@ en `localhost` como detrás del túnel.
   acceso HTTP directo vía `.htaccess`. Antes de exponer por ngrok, confirma
   que `Require all denied` esté disponible (`mod_authz_core` está habilitado
   por defecto en el Apache de XAMPP).
+
+  ## Cambio de la ruta de acceso del proyecto en la configurcion
+  // Cambiar la variable:
+// 'cochera-mysql_2/cochera-mysql_2'
+// por:
+// 'cochera-mysql_2'

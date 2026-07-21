@@ -31,6 +31,11 @@ class Router
         $this->add('PATCH', $pattern, $handler);
     }
 
+    public function delete(string $pattern, callable $handler): void
+    {
+        $this->add('DELETE', $pattern, $handler);
+    }
+
     public function dispatch(string $method, string $path): void
     {
         $path = trim($path, '/');
