@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/c/xampp/php/php.exe\" -r \"echo password_hash\\('admin123', PASSWORD_DEFAULT\\);\")",
+      "Bash(\"/c/xampp/mysql/bin/mysql.exe\" -u root)",
+      "Bash(\"/c/xampp/mysql/bin/mysql.exe\" -u root -e \"USE mi_cochera; SHOW TABLES; SELECT COUNT\\(*\\) AS espacios FROM espacios;\")"
+    ]
+  }
+}
