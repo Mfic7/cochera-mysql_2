@@ -31,6 +31,21 @@ const ReservationForm = (() => {
         el.hora.value = `${h}:${m}`;
     }
 
+    // Interpreta la fecha/hora de la reserva como HORA LOCAL, ignorando cualquier
+    // sufijo de zona horaria que venga del backend (evita desfases tipo UTC vs Perú).
+    function parseFechaLocal(isoString) {
+        if (!isoString) return null;
+        const match = String(isoString).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+        if (!match) return new Date(isoString);
+        const y = Number(match[1]);
+        const mo = Number(match[2]);
+        const d = Number(match[3]);
+        const h = Number(match[4]);
+        const mi = Number(match[5]);
+        const s = Number(match[6]);
+        return new Date(y, mo - 1, d, h, mi, s);
+    }
+
     async function init() {
         cacheEls();
         defaultDateTime();
@@ -354,15 +369,20 @@ const ReservationForm = (() => {
 
         try {
             const reserva = await Api.subirComprobante(state.reserva.id, formData);
-            state.reserva = reserva;
-            saveReservationToStorage(reserva);
-            actualizarStepper(reserva.estado);
+            // CORRECCIÓN: combinar en vez de reemplazar, para no perder campos
+            // como fecha_hora_inicio/token que usa el resto del formulario.
+            state.reserva = { ...state.reserva, ...reserva };
+            saveReservationToStorage(state.reserva);
+            actualizarStepper(state.reserva.estado);
             el['panel-pago'].querySelectorAll('input, .tab').forEach((n) => n.setAttribute('disabled', 'disabled'));
             el['btn-enviar-comprobante'].textContent = 'Comprobante enviado ✓';
             HoldTimer.stop();
             el['hold-timer'].hidden = true;
         } catch (e) {
-            showError('No se pudo enviar el comprobante. Intenta nuevamente.');
+            // CORRECCIÓN: mostrar el mensaje real que devuelve el servidor
+            // (ej. "Debes adjuntar..." o "Formato no permitido...") en vez de
+            // un mensaje genérico, para poder diagnosticar el fallo en pantalla.
+            showError(e.data?.error || e.message || 'No se pudo enviar el comprobante. Intenta nuevamente.');
             el['btn-enviar-comprobante'].disabled = false;
             el['btn-enviar-comprobante'].textContent = '🔒 Enviar comprobante y reservar';
         }
@@ -387,18 +407,48 @@ const ReservationForm = (() => {
         actualizarCancelacionPanel();
     }
 
-    // Muestra una notificación breve en pantalla
+    // Genera un pequeño sonido de notificación sin necesidad de archivos externos
+    function playNotificationSound() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioCtx();
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            oscillator.start();
+            oscillator.stop(ctx.currentTime + 0.5);
+        } catch (e) { /* el navegador bloqueó el audio o no lo soporta */ }
+    }
+
+    // Muestra una notificación centrada, con overlay oscuro, ícono y sonido
     function showToast(msg, timeout = 6000) {
-        let t = document.createElement('div');
-        t.className = 'app-toast';
-        t.textContent = msg;
-        document.body.appendChild(t);
-        // for animation
-        requestAnimationFrame(() => t.classList.add('visible'));
-        setTimeout(() => {
-            t.classList.remove('visible');
-            setTimeout(() => t.remove(), 400);
-        }, timeout);
+        playNotificationSound();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'app-toast-overlay';
+        overlay.innerHTML = `
+            <div class="app-toast">
+                <button class="app-toast-close" type="button" aria-label="Cerrar">✕</button>
+                <div class="app-toast-icon">🎉</div>
+                <div class="app-toast-msg">${msg}</div>
+            </div>`;
+        document.body.appendChild(overlay);
+
+        function cerrar() {
+            overlay.classList.remove('visible');
+            setTimeout(() => overlay.remove(), 400);
+        }
+
+        overlay.querySelector('.app-toast-close').addEventListener('click', cerrar);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrar(); });
+
+        requestAnimationFrame(() => overlay.classList.add('visible'));
+        setTimeout(cerrar, timeout);
     }
 
     function startPolling() {
@@ -429,14 +479,18 @@ const ReservationForm = (() => {
             el['panel-cancelacion'].hidden = true;
             return;
         }
+        const inicio = parseFechaLocal(state.reserva.fecha_hora_inicio).getTime();
+        const minutosRestantes = (inicio - Date.now()) / 60000;
+        if (minutosRestantes < 20) {
+            showCancelacionError('El plazo para solicitar la cancelación venció (debe ser con 20 minutos de anticipación).');
+            return;
+        }
         el['cancelacion-codigo'].textContent = state.reserva.codigo;
-        el['cancelacion-tipo'].value = '';
         el['cancelacion-motivo'].value = '';
         el['cancelacion-numero-operacion'].value = '';
         el['cancelacion-comprobante'].value = '';
         hideCancelacionError();
         el['panel-cancelacion'].hidden = false;
-        el['btn-abrir-cancelacion'].hidden = true;
         el['panel-cancelacion'].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
@@ -454,30 +508,30 @@ const ReservationForm = (() => {
         }
 
         // Verifica la ventana de cancelación: se permite hasta 20 minutos antes del inicio
-        const inicio = new Date(state.reserva.fecha_hora_inicio).getTime();
+        const inicio = parseFechaLocal(state.reserva.fecha_hora_inicio).getTime();
         const minutosRestantes = (inicio - Date.now()) / 60000;
         const canCancel = minutosRestantes >= 20;
-        el['btn-abrir-cancelacion'].hidden = !canCancel;
+
+        // El botón siempre se muestra mientras la reserva esté activa; solo se deshabilita
+        // si ya no está dentro del plazo permitido.
+        el['btn-abrir-cancelacion'].hidden = false;
+        el['btn-abrir-cancelacion'].disabled = !canCancel;
+        el['btn-abrir-cancelacion'].textContent = canCancel
+            ? 'Solicitar cancelación'
+            : 'Plazo de cancelación vencido';
+
         // siempre actualizamos el código por si cambió
         el['cancelacion-codigo'].textContent = state.reserva.codigo;
-        // Si no se permite cancelar, ocultamos el panel y mostramos un aviso si procede
-        if (!canCancel) {
-            el['panel-cancelacion'].hidden = true;
-        }
     }
 
     async function solicitarCancelacion() {
         hideCancelacionError();
         if (!state.reserva) return;
 
-        const tipo = el['cancelacion-tipo'].value.trim();
         const motivo = el['cancelacion-motivo'].value.trim();
         const numeroOperacion = el['cancelacion-numero-operacion'].value.trim();
         const comprobante = el['cancelacion-comprobante'].files[0];
 
-        if (!tipo) {
-            return showCancelacionError('Selecciona el tipo de cancelación.');
-        }
         if (!motivo) {
             return showCancelacionError('Ingresa el motivo de la cancelación.');
         }
@@ -494,7 +548,6 @@ const ReservationForm = (() => {
         try {
             const formData = new FormData();
             formData.append('token', state.reserva.token);
-            formData.append('tipo', tipo);
             formData.append('motivo', motivo);
             formData.append('numero_operacion', numeroOperacion);
             formData.append('comprobante', comprobante);
