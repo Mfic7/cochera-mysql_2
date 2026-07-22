@@ -97,6 +97,26 @@ $basePath = $config['app_base_path'];
         <p class="hold-timer" id="hold-timer" hidden></p>
     </section>
 
+    <section class="panel" id="panel-buscar-reserva">
+        <h2>¿Ya tienes una reserva?</h2>
+        <p class="muted">Ingresa tu celular y el número de espacio que reservaste para verla o cancelarla.</p>
+
+        <label>Número de celular<input type="tel" id="buscar-celular" placeholder="987 654 321"></label>
+        <label>Número de espacio<input type="text" id="buscar-espacio" placeholder="Ej. 04"></label>
+
+        <p class="banner-error" id="buscar-banner-error" hidden></p>
+
+        <button class="btn-primary" id="btn-buscar-reserva" type="button">Buscar reserva</button>
+
+        <div class="resumen" id="buscar-resultado" hidden style="margin-top:16px;">
+            <div class="resumen-row"><span>Código</span><strong id="buscar-r-codigo">—</strong></div>
+            <div class="resumen-row"><span>Espacio</span><strong id="buscar-r-espacio">—</strong></div>
+            <div class="resumen-row"><span>Fecha y hora</span><strong id="buscar-r-fecha">—</strong></div>
+            <div class="resumen-row"><span>Estado</span><strong id="buscar-r-estado">—</strong></div>
+            <button class="btn-secondary" id="btn-buscar-cancelar" type="button" hidden style="margin-top:12px;">Solicitar cancelación</button>
+        </div>
+    </section>
+
     <section class="panel" id="panel-pago" hidden>
         <h2>5. Realiza el pago del 50%</h2>
         <p class="muted">Elige tu método de pago</p>
@@ -157,10 +177,5 @@ $basePath = $config['app_base_path'];
 <script src="<?= $basePath ?>/assets/js/client/holdTimer.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/reservationForm.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/main.js"></script>
-
-<script src="<?= $basePath ?>/assets/js/client/reservationForm.js"></script>
-<script src="<?= $basePath ?>/assets/js/client/cancelacionRules.js"></script>
-<script src="<?= $basePath ?>/assets/js/client/main.js"></script>
-
 </body>
 </html>

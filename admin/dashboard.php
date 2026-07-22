@@ -20,7 +20,7 @@ $logoNegocio = Configuracion::get('logo_path', null);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars($nombreNegocio) ?> — Panel de administración</title>
-<link rel="stylesheet" href="<?= $basePath ?>/assets/css/admin.css?v=4">
+<link rel="stylesheet" href="<?= $basePath ?>/assets/css/admin.css">
 </head>
 <body>
 <div class="shell">
@@ -40,11 +40,11 @@ $logoNegocio = Configuracion::get('logo_path', null);
             <div class="nav-item" data-view="calendario">🗓️ Calendario<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="clientes">👥 Clientes<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="pagos">💳 Pagos</div>
-            <div class="nav-item" data-view="cancelaciones">❌ Cancelaciones</div>
             <div class="nav-item" data-view="reportes">📊 Reportes<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="vehiculos">🚗 Vehículos<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="espacios">🅿️ Espacios</div>
             <div class="nav-item" data-view="metodos-pago">🏦 Métodos de pago</div>
+            <div class="nav-item" data-view="cancelaciones">🚫 Cancelaciones<span class="badge-soon" id="badge-cancelaciones-pendientes" style="display:none"></span></div>
             <div class="nav-item" data-view="usuarios">🧑‍💼 Usuarios<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="configuracion">⚙️ Configuración</div>
             <div class="nav-item" data-view="suscripcion">👑 Suscripción</div>
@@ -61,10 +61,7 @@ $logoNegocio = Configuracion::get('logo_path', null);
         <section class="view active" id="view-dashboard">
             <div class="content-header">
                 <div><h2>Dashboard</h2><p>Resumen general de tu cochera</p></div>
-                <div class="header-actions">
-                    <button class="btn-sm sidebar-toggle" id="btn-toggle-sidebar" type="button" title="Ocultar sidebar">⇤ Ocultar sidebar</button>
-                    <button class="btn-sm" id="btn-refrescar-dashboard">↻ Actualizar</button>
-                </div>
+                <button class="btn-sm" id="btn-refrescar-dashboard">↻ Actualizar</button>
             </div>
             <div class="kpi-grid" id="kpi-grid"></div>
             <div class="grid-2">
@@ -153,23 +150,9 @@ $logoNegocio = Configuracion::get('logo_path', null);
             </div>
         </section>
 
-        <!-- Cancelaciones -->
-        <section class="view" id="view-cancelaciones">
-            <div class="content-header"><div><h2>Cancelaciones</h2><p>Solicitudes de cancelación enviadas por los clientes</p></div></div>
-            <div class="panel">
-                <div class="table-wrap"><table id="tabla-cancelaciones">
-                    <thead><tr><th>Reserva</th><th>Espacio</th><th>Cliente</th><th>Celular</th><th>Motivo</th><th>N° operación</th><th>Revisado</th><th>Fecha</th><th>Comprobante</th><th>Acción</th></tr></thead>
-                    <tbody></tbody>
-                </table></div>
-            </div>
-        </section>
-
         <!-- Espacios -->
         <section class="view" id="view-espacios">
             <div class="content-header"><div><h2>Espacios</h2><p>Administra el estado de cada espacio de la cochera</p></div></div>
-            <div class="toolbar">
-                <input type="search" id="buscador-espacios" placeholder="Buscar por código, zona o estado">
-            </div>
             <div class="panel">
                 <div class="table-wrap"><table id="tabla-espacios">
                     <thead><tr><th>Código</th><th>Zona</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -182,6 +165,27 @@ $logoNegocio = Configuracion::get('logo_path', null);
         <section class="view" id="view-metodos-pago">
             <div class="content-header"><div><h2>Métodos de pago</h2><p>Configura las cuentas que verán tus clientes al pagar</p></div></div>
             <div class="grid-3" id="metodos-pago-cards"></div>
+        </section>
+
+        <!-- Cancelaciones -->
+        <section class="view" id="view-cancelaciones">
+            <div class="content-header"><div><h2>Cancelaciones</h2><p>Solicitudes de cancelación enviadas por los clientes</p></div></div>
+            <div class="toolbar">
+                <select id="filtro-estado-cancelaciones">
+                    <option value="pendiente">Pendientes</option>
+                    <option value="aprobada">Aprobadas</option>
+                    <option value="fuera_plazo">Fuera de plazo</option>
+                    <option value="rechazada">Rechazadas</option>
+                    <option value="">Todas</option>
+                </select>
+                <button class="btn-sm" id="btn-filtrar-cancelaciones">Filtrar</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap"><table id="tabla-cancelaciones">
+                    <thead><tr><th>Reserva</th><th>Espacio</th><th>Cliente</th><th>Celular</th><th>Motivo</th><th>N° operación</th><th>Estado</th><th>Fecha</th><th>Comprobante</th><th>Acción</th></tr></thead>
+                    <tbody></tbody>
+                </table></div>
+            </div>
         </section>
 
         <!-- Configuración -->
@@ -234,9 +238,8 @@ $logoNegocio = Configuracion::get('logo_path', null);
 <script src="<?= $basePath ?>/assets/vendor/chart.umd.min.js"></script>
 <script src="<?= $basePath ?>/assets/js/shared/parkingGridRenderer.js"></script>
 <script src="<?= $basePath ?>/assets/js/admin/api.js"></script>
-<script src="<?= $basePath ?>/assets/js/admin/cancelaciones.js"></script>
 <script src="<?= $basePath ?>/assets/js/admin/charts.js"></script>
-<script src="<?= $basePath ?>/assets/js/admin/parkingGridAdmin.js?v=4"></script>
-<script src="<?= $basePath ?>/assets/js/admin/dashboard.js?v=4"></script>
+<script src="<?= $basePath ?>/assets/js/admin/parkingGridAdmin.js"></script>
+<script src="<?= $basePath ?>/assets/js/admin/dashboard.js"></script>
 </body>
 </html>

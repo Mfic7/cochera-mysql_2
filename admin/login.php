@@ -9,6 +9,8 @@ if (AdminAuth::check()) {
     header('Location: ' . $basePath . '/admin/dashboard.php');
     exit;
 }
+
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -18,6 +20,7 @@ if (AdminAuth::check()) {
 <title>Mi Cochera — Panel de administración</title>
 <link rel="stylesheet" href="<?= $basePath ?>/assets/css/admin.css">
 </head>
+
 <body class="login-body">
 <div class="login-card">
     <div class="brand-badge">P</div>

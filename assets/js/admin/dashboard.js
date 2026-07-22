@@ -38,9 +38,9 @@ const AdminDashboard = (() => {
             dashboard: loadDashboard,
             reservas: () => loadReservas(),
             pagos: () => loadPagos(),
-            cancelaciones: loadCancelaciones,
             espacios: loadEspacios,
             'metodos-pago': loadMetodosPago,
+            cancelaciones: loadCancelaciones,
             configuracion: loadConfiguracion,
         };
         if (loaders[view]) loaders[view]();
@@ -156,44 +156,12 @@ const AdminDashboard = (() => {
     }
 
     async function registrarSaldo(id) {
-        openSaldoModal(id);
-    }
-
-    function openSaldoModal(id) {
-        const horaActual = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-        openModal(`
-            <h3>Registrar saldo restante <button class="modal-close" data-close>×</button></h3>
-            <p class="modal-note">Selecciona el método con el que el cliente pagó. Esta acción se registrará inmediatamente a las ${horaActual}.</p>
-            <div class="modal-grid">
-                <button class="btn-sm btn-strong" data-metodo="yape">Yape</button>
-                <button class="btn-sm btn-strong" data-metodo="plin">Plin</button>
-                <button class="btn-sm btn-strong" data-metodo="transferencia">Transferencia</button>
-            </div>
-            <p class="modal-footer">Si el cliente pagó en efectivo o presencial, elige el método que mejor describa la transacción.</p>
-        `);
-
-        document.querySelectorAll('[data-metodo]').forEach((button) => {
-            button.addEventListener('click', async () => {
-                const metodo = button.dataset.metodo;
-                button.disabled = true;
-                try {
-                    await AdminApi.pagoSaldo(id, null, metodo);
-                    toast('Saldo registrado con ' + metodo + '. Reserva completada.');
-                    closeModal();
-                    await loadReservas();
-                    // Refresca pagos y cuadrícula para reflejar inmediatamente la operación
-                    try {
-                        await loadPagos();
-                        const ocup = await AdminApi.ocupacion();
-                        const grid = document.getElementById('admin-parking-grid');
-                        if (grid && ocup?.espacios) renderAdminParkingGrid(grid, ocup.espacios);
-                    } catch (e) { /* no crítico */ }
-                } catch (e) {
-                    button.disabled = false;
-                    toast(e.data?.error || 'No se pudo registrar el saldo.');
-                }
-            });
-        });
+        if (!confirm('¿Confirmar que el cliente pagó el saldo restante en efectivo/otro método presencial?')) return;
+        try {
+            await AdminApi.pagoSaldo(id, null, 'efectivo');
+            toast('Saldo registrado, reserva completada.');
+            loadReservas();
+        } catch (e) { toast(e.data?.error || 'No se pudo registrar el saldo.'); }
     }
 
     async function cancelarReserva(id) {
@@ -240,43 +208,16 @@ const AdminDashboard = (() => {
         try {
             await AdminApi.revisarPago(id, accion, motivo);
             toast(accion === 'aprobar' ? 'Pago aprobado.' : 'Pago rechazado.');
-            await loadPagos();
-            // Refresca la cuadrícula de ocupación en dashboard si existe
-            try {
-                const ocup = await AdminApi.ocupacion();
-                const grid = document.getElementById('admin-parking-grid');
-                if (grid && ocup?.espacios) renderAdminParkingGrid(grid, ocup.espacios);
-            } catch (e) { /* no crítico */ }
+            loadPagos();
         } catch (e) { toast(e.data?.error || 'No se pudo procesar.'); }
     }
 
-    async function loadCancelaciones() {
-        await AdminCancelaciones.loadCancelaciones();
-    }
-
     // ---------- Espacios ----------
-    let espaciosCache = [];
-
     async function loadEspacios() {
-        espaciosCache = await AdminApi.espacios();
-        renderEspacios(espaciosCache);
-
-        const search = document.getElementById('buscador-espacios');
-        if (search) {
-            search.addEventListener('input', () => renderEspacios(espaciosCache, search.value));
-        }
-    }
-
-    function renderEspacios(rows, filtro = '') {
-        const term = filtro.trim().toLowerCase();
-        const visibles = term ? rows.filter((e) =>
-            `${e.codigo} ${e.zona || ''} ${e.estado}`.toLowerCase().includes(term)
-        ) : rows;
-
-        document.querySelector('#tabla-espacios tbody').innerHTML = visibles.map((e) => `
+        const rows = await AdminApi.espacios();
+        document.querySelector('#tabla-espacios tbody').innerHTML = rows.map((e) => `
             <tr>
-                <td>${esc(e.codigo)}</td>
-                <td>${esc(e.zona || '—')}</td>
+                <td>${esc(e.codigo)}</td><td>${esc(e.zona || '—')}</td>
                 <td>
                     <select data-estado-espacio="${e.id}">
                         <option value="disponible" ${e.estado === 'disponible' ? 'selected' : ''}>Disponible</option>
@@ -284,37 +225,16 @@ const AdminDashboard = (() => {
                         <option value="mantenimiento" ${e.estado === 'mantenimiento' ? 'selected' : ''}>Mantenimiento</option>
                     </select>
                 </td>
-                <td class="actions-cell">
-                    <button class="btn-sm btn-save" data-guardar-espacio="${e.id}">Guardar</button>
-                    <button class="btn-sm btn-delete" data-eliminar-espacio="${e.id}">Eliminar</button>
-                </td>
+                <td><button class="btn-sm" data-guardar-espacio="${e.id}">Guardar</button></td>
             </tr>`).join('');
 
         document.querySelectorAll('[data-guardar-espacio]').forEach((b) => b.addEventListener('click', async () => {
             const id = b.dataset.guardarEspacio;
             const estado = document.querySelector(`[data-estado-espacio="${id}"]`).value;
             try {
-                    await AdminApi.actualizarEspacio(id, { estado });
-                    toast('Espacio actualizado.');
-                    await loadEspacios();
-                    // Actualiza la cuadrícula de ocupación en el dashboard si está presente
-                    try {
-                        const ocup = await AdminApi.ocupacion();
-                        const grid = document.getElementById('admin-parking-grid');
-                        if (grid && ocup?.espacios) renderAdminParkingGrid(grid, ocup.espacios);
-                    } catch (e) { /* no crítico */ }
-                } catch (e) { toast(e.data?.error || 'No se pudo actualizar.'); }
-        }));
-
-        document.querySelectorAll('[data-eliminar-espacio]').forEach((b) => b.addEventListener('click', async () => {
-            const id = b.dataset.eliminarEspacio;
-            if (!confirm('¿Eliminar este espacio? Esta acción no se puede deshacer.')) return;
-            try {
-                await AdminApi.eliminarEspacio(id);
-                toast('Espacio eliminado.');
-                espaciosCache = espaciosCache.filter((e) => e.id !== Number(id));
-                renderEspacios(espaciosCache, document.getElementById('buscador-espacios')?.value || '');
-            } catch (e) { toast(e.data?.error || 'No se pudo eliminar.'); }
+                await AdminApi.actualizarEspacio(id, { estado });
+                toast('Espacio actualizado.');
+            } catch (e) { toast('No se pudo actualizar.'); }
         }));
     }
 
@@ -341,20 +261,88 @@ const AdminDashboard = (() => {
             try {
                 if (qrInput.files[0]) {
                     const fd = new FormData(form);
-                    const r = await fetch(`${window.APP_BASE}/api/index.php/admin/metodos-pago/${tipo}`, {
-                        method: 'POST', body: fd, credentials: 'same-origin',
+                    await fetch(`${window.APP_BASE}/api/index.php/admin/metodos-pago/${tipo}`, {
+                        method: 'PATCH', body: fd, credentials: 'same-origin',
                         headers: { 'X-CSRF-Token': sessionStorage.getItem('csrf_token') || '' },
                     });
-                    if (!r.ok) {
-                        const errData = await r.json().catch(() => ({}));
-                        throw { data: errData };
-                    }
                 } else {
                     await AdminApi.actualizarMetodoPago(tipo, Object.fromEntries(new FormData(form).entries()));
                 }
                 toast('Método de pago actualizado.');
             } catch (e) { toast('No se pudo actualizar.'); }
         }));
+    }
+
+    // ---------- Cancelaciones ----------
+    const CANCELACION_LABEL = { pendiente: 'Pendiente', aprobada: 'Aprobada', fuera_plazo: 'Fuera de plazo', rechazada: 'Rechazada' };
+
+    async function loadCancelaciones() {
+        const estado = document.getElementById('filtro-estado-cancelaciones').value;
+        const resp = await fetch(`${window.APP_BASE}/api/index.php/admin/cancelaciones` + (estado ? `?estado=${estado}` : ''), { credentials: 'same-origin' });
+        const data = await resp.json();
+        const rows = data.data || [];
+
+        document.querySelector('#tabla-cancelaciones tbody').innerHTML = rows.map((c) => `
+            <tr>
+                <td>${esc(c.reserva_codigo)}</td><td>${esc(c.espacio_codigo)}</td>
+                <td>${esc(c.cliente_nombre)}</td><td>${esc(c.cliente_celular)}</td>
+                <td class="celda-motivo" title="${esc(c.motivo)}">${esc(c.motivo)}</td>
+                <td>${esc(c.numero_operacion || '—')}</td>
+                <td><span class="status-badge cancelacion-${c.estado}">${CANCELACION_LABEL[c.estado] || c.estado}</span></td>
+                <td>${fecha(c.created_at)}</td>
+                <td>${c.comprobante_path ? `<button class="btn-sm" data-ver-comprobante-cancelacion="${c.id}">Ver</button>` : '—'}</td>
+                <td>
+                    ${c.estado === 'pendiente' ? `
+                        <button class="btn-sm approve" data-aprobar-cancelacion="${c.id}">Aceptar</button>
+                        <button class="btn-sm reject" data-rechazar-cancelacion="${c.id}">Rechazar</button>` : (c.nota_admin ? esc(c.nota_admin) : '—')}
+                </td>
+            </tr>`).join('');
+
+        document.querySelectorAll('[data-ver-comprobante-cancelacion]').forEach((b) => b.addEventListener('click', () => {
+            openModal(`
+                <h3>Comprobante de pago <button class="modal-close" data-close>×</button></h3>
+                <img src="${window.APP_BASE}/api/index.php/admin/cancelaciones/${b.dataset.verComprobanteCancelacion}/comprobante" alt="Comprobante">`);
+        }));
+
+        document.querySelectorAll('[data-aprobar-cancelacion]').forEach((b) => b.addEventListener('click', () => decidirCancelacion(b.dataset.aprobarCancelacion, 'aprobar')));
+        document.querySelectorAll('[data-rechazar-cancelacion]').forEach((b) => b.addEventListener('click', () => {
+            const nota = prompt('Motivo del rechazo (opcional):') || null;
+            decidirCancelacion(b.dataset.rechazarCancelacion, 'rechazar', nota);
+        }));
+
+        // Badge con el número de pendientes, visible en el menú lateral
+        const pendientes = rows.filter((c) => c.estado === 'pendiente').length;
+        const badge = document.getElementById('badge-cancelaciones-pendientes');
+        if (badge) {
+            if (estado === 'pendiente' || estado === '') {
+                badge.textContent = pendientes;
+                badge.style.display = pendientes > 0 ? '' : 'none';
+            }
+        }
+    }
+
+    async function decidirCancelacion(id, accion, nota) {
+        try {
+            const r = await fetch(`${window.APP_BASE}/api/index.php/admin/cancelaciones/${id}`, {
+                method: 'PATCH',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': sessionStorage.getItem('csrf_token') || '' },
+                body: JSON.stringify({ accion, nota }),
+            });
+            const data = await r.json();
+            if (!r.ok) throw data;
+
+            if (data.estado === 'fuera_plazo') {
+                toast('⚠️ ' + (data.mensaje || 'Fuera del plazo de cancelación. No procede devolución.'));
+            } else if (data.estado === 'aprobada') {
+                toast('✅ ' + (data.mensaje || 'Reserva cancelada.'));
+            } else {
+                toast('Solicitud rechazada.');
+            }
+            loadCancelaciones();
+        } catch (e) {
+            toast(e?.error || 'No se pudo procesar la solicitud.');
+        }
     }
 
     // ---------- Configuración ----------
@@ -380,12 +368,13 @@ const AdminDashboard = (() => {
         try {
             let resp;
             if (logoInput.files[0]) {
+                // Con archivo: se envía como multipart/form-data (igual que el QR de métodos de pago)
                 const fd = new FormData(form);
                 const r = await fetch(`${window.APP_BASE}/api/index.php/admin/configuracion`, {
-                    method: 'POST', body: fd, credentials: 'same-origin',
+                    method: 'PATCH', body: fd, credentials: 'same-origin',
                     headers: { 'X-CSRF-Token': sessionStorage.getItem('csrf_token') || '' },
                 });
-                resp = await r.json().catch(() => ({}));
+                resp = await r.json();
                 if (!r.ok) throw { data: resp };
             } else {
                 const data = Object.fromEntries(new FormData(form).entries());
@@ -423,24 +412,6 @@ const AdminDashboard = (() => {
     }
     function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
 
-    function updateSidebarToggleLabels() {
-        const shell = document.querySelector('.shell');
-        const collapsed = shell.classList.contains('sidebar-collapsed');
-        const label = collapsed ? '☰ Mostrar sidebar' : '⇤ Ocultar sidebar';
-        const title = collapsed ? 'Mostrar sidebar' : 'Ocultar sidebar';
-        const button = document.getElementById('btn-toggle-sidebar');
-        if (button) {
-            button.textContent = label;
-            button.title = title;
-        }
-    }
-
-    function toggleSidebar() {
-        const shell = document.querySelector('.shell');
-        shell.classList.toggle('sidebar-collapsed');
-        updateSidebarToggleLabels();
-    }
-
     async function init() {
         try {
             const me = await AdminApi.me();
@@ -448,12 +419,10 @@ const AdminDashboard = (() => {
         } catch (e) { return; }
 
         initNav();
-        const sidebarToggle = document.getElementById('btn-toggle-sidebar');
-        if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
-        updateSidebarToggleLabels();
         document.getElementById('btn-refrescar-dashboard').addEventListener('click', loadDashboard);
         document.getElementById('btn-filtrar-reservas').addEventListener('click', loadReservas);
         document.getElementById('btn-filtrar-pagos').addEventListener('click', loadPagos);
+        document.getElementById('btn-filtrar-cancelaciones').addEventListener('click', loadCancelaciones);
         loadDashboard();
     }
 

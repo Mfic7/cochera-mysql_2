@@ -4,8 +4,11 @@ namespace App\Controllers;
 
 use App\Controller;
 use App\Database;
+use App\Models\Cancelacion;
 use App\Models\Reserva;
 use App\Services\EspacioAvailabilityService;
+use App\Services\FileUploadException;
+use App\Services\FileUploadService;
 use App\Services\ReservaConflictException;
 use App\Services\ReservaService;
 use App\Support\Dates;
@@ -59,33 +62,99 @@ class ReservaController extends Controller
     }
 
     /**
-     * Búsqueda para el "perfil del cliente": localizar su reserva usando
-     * código + celular (sin exponer el token, que solo vive en el navegador
-     * donde se creó la reserva).
+     * Búsqueda de reserva por el CLIENTE, usando su celular y el número de espacio
+     * que reservó (más fácil de recordar que el código de reserva).
      */
     public function buscar(): void
     {
         EspacioAvailabilityService::expirarHoldsVencidos();
 
-        $codigo = trim((string) ($_GET['codigo'] ?? ''));
         $celular = preg_replace('/[\s\-]/', '', (string) ($_GET['celular'] ?? ''));
+        $numeroEspacio = trim((string) ($_GET['espacio'] ?? ''));
 
-        if ($codigo === '' || $celular === '') {
-            $this->error('Ingresa el código de tu reserva y tu número de celular.', 422);
+        if ($celular === '' || $numeroEspacio === '') {
+            $this->error('Ingresa tu número de celular y el número de espacio.', 422);
+            return;
         }
 
-        $reserva = Reserva::findByCodigoAndCelular($codigo, $celular);
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare(
+            "SELECT r.*, e.codigo AS espacio_codigo
+             FROM reservas r
+             INNER JOIN espacios e ON e.id = r.espacio_id
+             WHERE r.cliente_celular = :celular AND e.numero = :numero
+             ORDER BY r.created_at DESC
+             LIMIT 1"
+        );
+        $stmt->execute(['celular' => $celular, 'numero' => $numeroEspacio]);
+        $reserva = $stmt->fetch();
+
         if (!$reserva) {
-            $this->error('No encontramos una reserva con esos datos. Verifica el código y el celular.', 404);
+            $this->error('No encontramos una reserva con ese celular y número de espacio.', 404);
+            return;
         }
 
         $this->json($this->presentar($reserva));
     }
 
     /**
-     * Devuelve el último pago rechazado de la reserva (si existe), para que
-     * el cliente vea el motivo del rechazo en su pantalla.
+     * El CLIENTE solicita cancelar su reserva. No la cancela de inmediato:
+     * queda 'pendiente' hasta que el admin la revise y decida (dentro/fuera de plazo).
      */
+    public function cancelacion(string $id): void
+    {
+        $reservaId = (int) $id;
+        $reserva = Reserva::find($reservaId);
+        $token = $_POST['token'] ?? null;
+
+        if (!$reserva || $token === null || !hash_equals($reserva['token'], $token)) {
+            $this->error('Reserva no encontrada', 404);
+            return;
+        }
+
+        if (in_array($reserva['estado'], ['cancelada', 'vencida'], true)) {
+            $this->error('Esta reserva ya no se puede cancelar.', 409);
+            return;
+        }
+
+        if (Cancelacion::pendienteParaReserva($reservaId)) {
+            $this->error('Ya existe una solicitud de cancelación pendiente para esta reserva.', 409);
+            return;
+        }
+
+        $motivo = trim((string) ($_POST['motivo'] ?? ''));
+        $numeroOperacion = trim((string) ($_POST['numero_operacion'] ?? ''));
+        if ($motivo === '') {
+            $this->error('Ingresa el motivo de la cancelación.', 422);
+            return;
+        }
+        if ($numeroOperacion === '') {
+            $this->error('Ingresa el número de operación del pago.', 422);
+            return;
+        }
+        if (!isset($_FILES['comprobante']) || $_FILES['comprobante']['error'] === UPLOAD_ERR_NO_FILE) {
+            $this->error('Adjunta el comprobante de pago.', 422);
+            return;
+        }
+
+        try {
+            $comprobantePath = FileUploadService::guardarEvidenciaCancelacion($_FILES['comprobante'], $reservaId);
+        } catch (FileUploadException $e) {
+            $this->error($e->getMessage(), 422);
+            return;
+        }
+
+        $pdo = Database::connection();
+        Cancelacion::crear($pdo, [
+            'reserva_id' => $reservaId,
+            'motivo' => $motivo,
+            'numero_operacion' => $numeroOperacion,
+            'comprobante_path' => $comprobantePath,
+        ]);
+
+        $this->json(['ok' => true, 'mensaje' => 'Solicitud de cancelación enviada. El equipo la revisará.']);
+    }
+
     private function ultimoRechazo(int $reservaId): ?array
     {
         $stmt = Database::connection()->prepare(
