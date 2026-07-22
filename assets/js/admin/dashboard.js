@@ -38,6 +38,7 @@ const AdminDashboard = (() => {
             dashboard: loadDashboard,
             reservas: () => loadReservas(),
             pagos: () => loadPagos(),
+            cancelaciones: loadCancelaciones,
             espacios: loadEspacios,
             'metodos-pago': loadMetodosPago,
             configuracion: loadConfiguracion,
@@ -249,6 +250,10 @@ const AdminDashboard = (() => {
         } catch (e) { toast(e.data?.error || 'No se pudo procesar.'); }
     }
 
+    async function loadCancelaciones() {
+        await AdminCancelaciones.loadCancelaciones();
+    }
+
     // ---------- Espacios ----------
     let espaciosCache = [];
 
@@ -418,6 +423,24 @@ const AdminDashboard = (() => {
     }
     function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
 
+    function updateSidebarToggleLabels() {
+        const shell = document.querySelector('.shell');
+        const collapsed = shell.classList.contains('sidebar-collapsed');
+        const label = collapsed ? '☰ Mostrar sidebar' : '⇤ Ocultar sidebar';
+        const title = collapsed ? 'Mostrar sidebar' : 'Ocultar sidebar';
+        const button = document.getElementById('btn-toggle-sidebar');
+        if (button) {
+            button.textContent = label;
+            button.title = title;
+        }
+    }
+
+    function toggleSidebar() {
+        const shell = document.querySelector('.shell');
+        shell.classList.toggle('sidebar-collapsed');
+        updateSidebarToggleLabels();
+    }
+
     async function init() {
         try {
             const me = await AdminApi.me();
@@ -425,6 +448,9 @@ const AdminDashboard = (() => {
         } catch (e) { return; }
 
         initNav();
+        const sidebarToggle = document.getElementById('btn-toggle-sidebar');
+        if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
+        updateSidebarToggleLabels();
         document.getElementById('btn-refrescar-dashboard').addEventListener('click', loadDashboard);
         document.getElementById('btn-filtrar-reservas').addEventListener('click', loadReservas);
         document.getElementById('btn-filtrar-pagos').addEventListener('click', loadPagos);

@@ -50,6 +50,8 @@ const AdminApi = (() => {
         pagos: (estado) => request('/admin/pagos' + (estado ? `?estado=${estado}` : '')),
         revisarPago: (id, accion, motivo) => request(`/admin/pagos/${id}`, { method: 'PATCH', body: JSON.stringify({ accion, motivo }) }),
         comprobanteUrl: (id) => `${base}/admin/pagos/${id}/comprobante`,
+        cancelaciones: () => request('/admin/cancelaciones'),
+        revisarCancelacion: (id) => request(`/admin/cancelaciones/${id}/revisado`, { method: 'PATCH' }),
 
         espacios: () => request('/admin/espacios'),
         crearEspacio: (data) => request('/admin/espacios', { method: 'POST', body: JSON.stringify(data) }),

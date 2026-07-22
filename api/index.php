@@ -24,7 +24,22 @@ $router->get('ping', function () {
 
 require __DIR__ . '/routes.php';
 
-$path = $_SERVER['PATH_INFO'] ?? '/';
+$path = $_SERVER['PATH_INFO'] ?? null;
+if ($path === null) {
+    $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '/';
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    if (str_starts_with($requestUri, $scriptName)) {
+        $path = substr($requestUri, strlen($scriptName));
+    } else {
+        $scriptDir = dirname($scriptName);
+        if ($scriptDir !== '/' && str_starts_with($requestUri, $scriptDir)) {
+            $path = substr($requestUri, strlen($scriptDir));
+        } else {
+            $path = '/';
+        }
+    }
+}
+$path = '/' . trim((string) $path, '/');
 
 try {
     $router->dispatch($_SERVER['REQUEST_METHOD'], $path);

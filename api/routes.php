@@ -6,9 +6,11 @@ declare(strict_types=1);
 
 use App\Controllers\ConfigController;
 use App\Controllers\EspacioController;
+use App\Controllers\CancelacionController;
 use App\Controllers\PagoController;
 use App\Controllers\ReservaController;
 use App\Controllers\Admin\AuthController;
+use App\Controllers\Admin\CancelacionAdminController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\ReservaAdminController;
 use App\Controllers\Admin\PagoAdminController;
@@ -21,8 +23,12 @@ $router->get('metodos-pago', fn () => (new ConfigController())->metodosPago());
 $router->get('espacios/disponibilidad', fn () => (new EspacioController())->disponibilidad());
 
 $router->post('reservas', fn () => (new ReservaController())->crear());
+// IMPORTANTE: esta ruta debe ir ANTES de 'reservas/{id}', porque {id} matchea
+// cualquier segmento (incluida la palabra "buscar") y quedaría atrapada primero.
+$router->get('reservas/buscar', fn () => (new ReservaController())->buscar());
 $router->get('reservas/{id}', fn ($id) => (new ReservaController())->ver($id));
 $router->post('reservas/{id}/comprobante', fn ($id) => (new PagoController())->comprobante($id));
+$router->post('reservas/{id}/cancelacion', fn ($id) => (new CancelacionController())->solicitar($id));
 
 $router->post('admin/auth/login', fn () => (new AuthController())->login());
 $router->post('admin/auth/logout', fn () => (new AuthController())->logout());
@@ -44,6 +50,8 @@ $router->post('admin/reservas/{id}/pago-saldo', fn ($id) => (new ReservaAdminCon
 $router->get('admin/pagos', fn () => (new PagoAdminController())->listar());
 $router->get('admin/pagos/{id}/comprobante', fn ($id) => (new PagoAdminController())->comprobante($id));
 $router->patch('admin/pagos/{id}', fn ($id) => (new PagoAdminController())->revisar($id));
+$router->get('admin/cancelaciones', fn () => (new CancelacionAdminController())->listar());
+$router->patch('admin/cancelaciones/{id}/revisado', fn ($id) => (new CancelacionAdminController())->marcarRevisado($id));
 
 $router->get('admin/espacios', fn () => (new EspacioAdminController())->listar());
 $router->post('admin/espacios', fn () => (new EspacioAdminController())->crear());

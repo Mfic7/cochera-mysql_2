@@ -107,6 +107,18 @@ $basePath = $config['app_base_path'];
         <label>Sube tu comprobante de pago<input type="file" id="comprobante" accept="image/*,application/pdf"></label>
 
         <button class="btn-primary" id="btn-enviar-comprobante" type="button">🔒 Enviar comprobante y reservar</button>
+        <button class="btn-secondary" id="btn-abrir-cancelacion" type="button" hidden>Solicitar cancelación</button>
+    </section>
+
+    <section class="panel" id="panel-cancelacion" hidden>
+        <h2>6. Solicitar cancelación</h2>
+        <p class="muted">Envía tu solicitud cuando necesites cancelar la reserva.</p>
+        <p>Reserva: <strong id="cancelacion-codigo">—</strong></p>
+        <label>Motivo de la cancelación<textarea id="cancelacion-motivo" rows="3" placeholder="Describe brevemente por qué deseas cancelar"></textarea></label>
+        <label>Número de operación / código de transacción<input type="text" id="cancelacion-numero-operacion"></label>
+        <label>Comprobante de pago<input type="file" id="cancelacion-comprobante" accept="image/*,application/pdf"></label>
+        <p class="banner-error" id="cancelacion-banner-error" hidden></p>
+        <button class="btn-primary" id="btn-solicitar-cancelacion" type="button">Enviar solicitud de cancelación</button>
     </section>
 </main>
 

@@ -7,6 +7,7 @@ const ReservationForm = (() => {
         reserva: null,
         metodoActivo: null,
         pollHandle: null,
+        lastEstado: null,
     };
 
     const el = {};
@@ -16,8 +17,9 @@ const ReservationForm = (() => {
             'fecha', 'hora', 'horas', 'parking-grid', 'stat-disponibles', 'stat-ocupados', 'stat-tarifa',
             'cliente-nombre', 'cliente-celular', 'r-espacio', 'r-fecha', 'r-hora', 'r-tarifa', 'r-total',
             'r-adelanto', 'hold-minutes', 'btn-reservar', 'hold-timer', 'panel-pago', 'metodo-tabs',
-            'metodo-detalle', 'numero-operacion', 'comprobante', 'btn-enviar-comprobante', 'stepper',
-            'banner-error', 'info-direccion', 'info-horario', 'info-telefono',
+            'metodo-detalle', 'numero-operacion', 'comprobante', 'btn-enviar-comprobante', 'btn-abrir-cancelacion', 'panel-cancelacion',
+            'cancelacion-codigo', 'cancelacion-motivo', 'cancelacion-numero-operacion', 'cancelacion-comprobante',
+            'btn-solicitar-cancelacion', 'cancelacion-banner-error', 'stepper', 'banner-error', 'info-direccion', 'info-horario', 'info-telefono',
         ].forEach((id) => { el[id] = document.getElementById(id); });
     }
 
@@ -84,6 +86,8 @@ const ReservationForm = (() => {
 
         el['btn-reservar'].addEventListener('click', crearReserva);
         el['btn-enviar-comprobante'].addEventListener('click', enviarComprobante);
+        el['btn-abrir-cancelacion'].addEventListener('click', mostrarPanelCancelacion);
+        el['btn-solicitar-cancelacion'].addEventListener('click', solicitarCancelacion);
     }
 
     async function reloadGrid() {
@@ -236,6 +240,7 @@ const ReservationForm = (() => {
         });
         seleccionarMetodo(state.metodosPago[0].tipo);
         el['panel-pago'].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        actualizarCancelacionPanel();
     }
 
     function etiquetaMetodo(tipo) {
@@ -305,7 +310,7 @@ const ReservationForm = (() => {
         }
     }
 
-    function actualizarStepper(estado) {
+  function actualizarStepper(estado) {
         const orden = ['pendiente_pago', 'en_validacion', 'adelanto_pagado', 'pago_completo'];
         const idx = orden.indexOf(estado);
         el.stepper.querySelectorAll('.step').forEach((step) => {
@@ -316,6 +321,60 @@ const ReservationForm = (() => {
         if (estado === 'cancelada' || estado === 'vencida') {
             showError(estado === 'cancelada' ? 'Esta reserva fue cancelada.' : 'La reserva venció por falta de pago.');
         }
+        // Si la reserva acaba de pasar a 'adelanto_pagado', notificar al usuario
+        if (state.lastEstado !== 'adelanto_pagado' && estado === 'adelanto_pagado') {
+            showToast('Tu reserva ha sido confirmada. Tienes 20 minutos antes de la hora reservada para cancelar. Pasado ese tiempo, no habrá devolución del dinero.', 20000);
+        }
+        state.lastEstado = estado;
+        actualizarCancelacionPanel();
+    }
+
+    // Muestra una notificación breve en pantalla
+ function showToast(msg, timeout = 6000) {
+        reproducirSonidoNotificacion();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'app-toast-overlay';
+
+        const t = document.createElement('div');
+        t.className = 'app-toast';
+        t.innerHTML = `
+            <div class="app-toast-icon">🔔</div>
+            <div class="app-toast-msg">${msg}</div>
+            <button class="app-toast-close" type="button" aria-label="Cerrar">✕</button>
+        `;
+        overlay.appendChild(t);
+        document.body.appendChild(overlay);
+
+        requestAnimationFrame(() => overlay.classList.add('visible'));
+
+        const cerrar = () => {
+            overlay.classList.remove('visible');
+            setTimeout(() => overlay.remove(), 400);
+        };
+
+        t.querySelector('.app-toast-close').addEventListener('click', cerrar);
+        setTimeout(cerrar, timeout);
+    }
+
+    // Genera un sonido corto de notificación sin necesidad de archivos de audio
+    function reproducirSonidoNotificacion() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            [0, 0.15].forEach((delay, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = i === 0 ? 880 : 1175;
+                gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + delay + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.3);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + delay);
+                osc.stop(ctx.currentTime + delay + 0.3);
+            });
+        } catch (e) { /* el navegador puede bloquear audio sin interacción previa */ }
     }
 
     function startPolling() {
@@ -330,6 +389,99 @@ const ReservationForm = (() => {
                 }
             } catch (e) { /* silencioso: se reintenta en el próximo tick */ }
         }, 5000);
+    }
+
+    function mostrarPanelCancelacion() {
+        if (!state.reserva) return;
+        const estado = state.reserva.estado;
+        if (['cancelada', 'vencida'].includes(estado)) {
+            el['panel-cancelacion'].hidden = true;
+            return;
+        }
+        el['cancelacion-codigo'].textContent = state.reserva.codigo;
+        el['cancelacion-motivo'].value = '';
+        el['cancelacion-numero-operacion'].value = '';
+        el['cancelacion-comprobante'].value = '';
+        hideCancelacionError();
+        el['panel-cancelacion'].hidden = false;
+        el['btn-abrir-cancelacion'].hidden = true;
+        el['panel-cancelacion'].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function actualizarCancelacionPanel() {
+        if (!state.reserva) {
+            el['panel-cancelacion'].hidden = true;
+            el['btn-abrir-cancelacion'].hidden = true;
+            return;
+        }
+        // Solo permitir cancelar si la reserva no está cancelada/vencida
+        if (['cancelada', 'vencida'].includes(state.reserva.estado)) {
+            el['btn-abrir-cancelacion'].hidden = true;
+            el['panel-cancelacion'].hidden = true;
+            return;
+        }
+
+        // Verifica la ventana de cancelación: se permite hasta 20 minutos antes del inicio
+        const inicio = new Date(state.reserva.fecha_hora_inicio).getTime();
+        const minutosRestantes = (inicio - Date.now()) / 60000;
+        const canCancel = minutosRestantes >= 20;
+        el['btn-abrir-cancelacion'].hidden = !canCancel;
+        // siempre actualizamos el código por si cambió
+        el['cancelacion-codigo'].textContent = state.reserva.codigo;
+        // Si no se permite cancelar, ocultamos el panel y mostramos un aviso si procede
+        if (!canCancel) {
+            el['panel-cancelacion'].hidden = true;
+        }
+    }
+
+    async function solicitarCancelacion() {
+        hideCancelacionError();
+        if (!state.reserva) return;
+
+        const motivo = el['cancelacion-motivo'].value.trim();
+        const numeroOperacion = el['cancelacion-numero-operacion'].value.trim();
+        const comprobante = el['cancelacion-comprobante'].files[0];
+
+        if (!motivo) {
+            return showCancelacionError('Ingresa el motivo de la cancelación.');
+        }
+        if (!numeroOperacion) {
+            return showCancelacionError('Ingresa el número de operación o código del pago.');
+        }
+        if (!comprobante) {
+            return showCancelacionError('Adjunta el comprobante de pago.');
+        }
+
+        el['btn-solicitar-cancelacion'].disabled = true;
+        el['btn-solicitar-cancelacion'].textContent = 'Enviando…';
+
+        try {
+            const formData = new FormData();
+            formData.append('token', state.reserva.token);
+            formData.append('motivo', motivo);
+            formData.append('numero_operacion', numeroOperacion);
+            formData.append('comprobante', comprobante);
+
+            await Api.solicitarCancelacion(state.reserva.id, formData);
+            el['panel-cancelacion'].innerHTML = `<div class="panel-message"><strong>Solicitud enviada.</strong><p>Hemos recibido tu solicitud de cancelación y el equipo la revisará.</p></div>`;
+        } catch (e) {
+            if (e.status === 409) {
+                showCancelacionError(e.data?.error || 'Ya existe una solicitud de cancelación para esta reserva.');
+            } else {
+                showCancelacionError(e.data?.error || 'No se pudo enviar la solicitud. Intenta nuevamente.');
+            }
+            el['btn-solicitar-cancelacion'].disabled = false;
+            el['btn-solicitar-cancelacion'].textContent = 'Enviar solicitud de cancelación';
+        }
+    }
+
+    function showCancelacionError(msg) {
+        el['cancelacion-banner-error'].textContent = msg;
+        el['cancelacion-banner-error'].hidden = false;
+    }
+
+    function hideCancelacionError() {
+        el['cancelacion-banner-error'].hidden = true;
     }
 
     function stopPolling() {

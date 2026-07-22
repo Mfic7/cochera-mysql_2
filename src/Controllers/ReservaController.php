@@ -16,8 +16,6 @@ class ReservaController extends Controller
     {
         $input = $this->input();
 
-        // handleValidation() debe capturar ValidationException y responder 422
-        // con los errores; asumo que retorna el array validado por Validator::validate().
         $data = $this->handleValidation(function () use ($input) {
             return (new Validator($input))
                 ->required('espacio_id', 'Espacio')
@@ -31,7 +29,6 @@ class ReservaController extends Controller
                 ->validate();
         });
 
-        // Normaliza nombre y celular antes de persistir
         $data['cliente_nombre'] = trim((string) $data['cliente_nombre']);
         $data['cliente_celular'] = preg_replace('/[\s\-]/', '', (string) $data['cliente_celular']);
         $data['ip_origen'] = $_SERVER['REMOTE_ADDR'] ?? null;
@@ -55,6 +52,30 @@ class ReservaController extends Controller
 
         if (!$reserva || $token === null || !hash_equals($reserva['token'], $token)) {
             $this->error('Reserva no encontrada', 404);
+        }
+
+        $this->json($this->presentar($reserva));
+    }
+
+    /**
+     * Búsqueda para el "perfil del cliente": localizar su reserva usando
+     * código + celular (sin exponer el token, que solo vive en el navegador
+     * donde se creó la reserva).
+     */
+    public function buscar(): void
+    {
+        EspacioAvailabilityService::expirarHoldsVencidos();
+
+        $codigo = trim((string) ($_GET['codigo'] ?? ''));
+        $celular = preg_replace('/[\s\-]/', '', (string) ($_GET['celular'] ?? ''));
+
+        if ($codigo === '' || $celular === '') {
+            $this->error('Ingresa el código de tu reserva y tu número de celular.', 422);
+        }
+
+        $reserva = Reserva::findByCodigoAndCelular($codigo, $celular);
+        if (!$reserva) {
+            $this->error('No encontramos una reserva con esos datos. Verifica el código y el celular.', 404);
         }
 
         $this->json($this->presentar($reserva));

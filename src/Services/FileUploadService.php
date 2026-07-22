@@ -18,6 +18,11 @@ class FileUploadService
         return self::guardar($file, 'comprobantes/' . $reservaId);
     }
 
+    public static function guardarComprobanteCancelacion(array $file, int $reservaId): string
+    {
+        return self::guardar($file, 'cancelaciones/' . $reservaId);
+    }
+
     /** Valida y mueve un archivo subido a storage/qr/, nombrado por tipo de método de pago. */
     public static function guardarQr(array $file, string $tipo): string
     {

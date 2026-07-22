@@ -27,6 +27,9 @@ const Api = (() => {
             request(`/espacios/disponibilidad?fecha=${fecha}&hora_inicio=${hora}&horas=${horas}`),
         crearReserva: (payload) => request('/reservas', { method: 'POST', body: JSON.stringify(payload) }),
         obtenerReserva: (id, token) => request(`/reservas/${id}?token=${token}`),
+        buscarReserva: (codigo, celular) =>
+            request(`/reservas/buscar?codigo=${encodeURIComponent(codigo)}&celular=${encodeURIComponent(celular)}`),
         subirComprobante: (id, formData) => request(`/reservas/${id}/comprobante`, { method: 'POST', body: formData }),
+        solicitarCancelacion: (id, formData) => request(`/reservas/${id}/cancelacion`, { method: 'POST', body: formData }),
     };
-})();
+})(); 

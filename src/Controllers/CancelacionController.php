@@ -11,6 +11,9 @@ use App\Services\FileUploadService;
 
 class CancelacionController extends Controller
 {
+    /** Minutos mínimos de antelación exigidos para poder cancelar sin perder el adelanto. */
+    private const MINUTOS_LIMITE_CANCELACION = 20;
+
     public function solicitar(string $id): void
     {
         $reservaId = (int) $id;
@@ -23,6 +26,20 @@ class CancelacionController extends Controller
         if (in_array($reserva['estado'], ['cancelada', 'vencida'], true)) {
             $this->error('Esta reserva ya fue cancelada o vencida.', 409);
         }
+
+        // Regla de negocio: solo se puede cancelar hasta 20 minutos antes del ingreso.
+        // Se valida en el servidor (no solo en el frontend) para que no pueda evadirse.
+        $inicioTs = strtotime($reserva['fecha_hora_inicio']);
+        $minutosRestantes = ($inicioTs - time()) / 60;
+        if ($minutosRestantes < self::MINUTOS_LIMITE_CANCELACION) {
+            $this->error(
+                'El plazo para cancelar venció. Solo se permite cancelar hasta '
+                . self::MINUTOS_LIMITE_CANCELACION
+                . ' minutos antes de tu hora de reserva; pasado ese tiempo no hay devolución de dinero.',
+                409
+            );
+        }
+
         if (Cancelacion::existsForReserva($reservaId)) {
             $this->error('Ya existe una solicitud de cancelación para esta reserva.', 409);
         }
@@ -35,11 +52,11 @@ class CancelacionController extends Controller
             $this->error('Debes indicar el motivo de la cancelación.', 422);
         }
         if (!isset($_FILES['comprobante'])) {
-            $this->error('Debes adjuntar una imagen o PDF de tu pago.', 422);
+            $this->error('Debes adjuntar una imagen o PDF de tu comprobante.', 422);
         }
 
         try {
-            $comprobantePath = FileUploadService::guardarComprobante($_FILES['comprobante'], $reservaId);
+            $comprobantePath = FileUploadService::guardarComprobanteCancelacion($_FILES['comprobante'], $reservaId);
         } catch (FileUploadException $e) {
             $this->error($e->getMessage(), 422);
         }

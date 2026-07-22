@@ -67,7 +67,6 @@ class ReservaService
             $montoAdelanto = round($montoTotal * $adelantoPct / 100, 2);
             $montoRestante = round($montoTotal - $montoAdelanto, 2);
             $token = bin2hex(random_bytes(16));
-            $codigo = Reserva::generarCodigo($pdo);
             $holdExpiraEn = date('Y-m-d H:i:s', time() + $holdMinutes * 60);
 
             $insert = $pdo->prepare(
@@ -78,23 +77,40 @@ class ReservaService
                     (:codigo, :token, :espacio_id, :cliente_nombre, :cliente_celular, :inicio, :horas,
                      :fin, :tarifa, :total, :adelanto, :restante, \'pendiente_pago\', :hold_expira_en, :ip)'
             );
-            $insert->execute([
-                'codigo' => $codigo,
-                'token' => $token,
-                'espacio_id' => $espacioId,
-                'cliente_nombre' => $datos['cliente_nombre'],
-                'cliente_celular' => $datos['cliente_celular'],
-                'inicio' => $inicio,
-                'horas' => $horas,
-                'fin' => $fin,
-                'tarifa' => $tarifaHora,
-                'total' => $montoTotal,
-                'adelanto' => $montoAdelanto,
-                'restante' => $montoRestante,
-                'hold_expira_en' => $holdExpiraEn,
-                'ip' => $datos['ip_origen'] ?? null,
-            ]);
-            $reservaId = (int) $pdo->lastInsertId();
+
+            $reservaId = null;
+            $codigo = null;
+            $attempts = 0;
+            do {
+                if ($attempts++ > 5) {
+                    throw new \RuntimeException('No se pudo generar un código único de reserva. Intenta nuevamente.');
+                }
+                $codigo = Reserva::generarCodigo($pdo);
+                try {
+                    $insert->execute([
+                        'codigo' => $codigo,
+                        'token' => $token,
+                        'espacio_id' => $espacioId,
+                        'cliente_nombre' => $datos['cliente_nombre'],
+                        'cliente_celular' => $datos['cliente_celular'],
+                        'inicio' => $inicio,
+                        'horas' => $horas,
+                        'fin' => $fin,
+                        'tarifa' => $tarifaHora,
+                        'total' => $montoTotal,
+                        'adelanto' => $montoAdelanto,
+                        'restante' => $montoRestante,
+                        'hold_expira_en' => $holdExpiraEn,
+                        'ip' => $datos['ip_origen'] ?? null,
+                    ]);
+                    $reservaId = (int) $pdo->lastInsertId();
+                    break;
+                } catch (\PDOException $e) {
+                    if (($e->errorInfo[1] ?? null) !== 1062 || !str_contains($e->errorInfo[2] ?? '', 'codigo')) {
+                        throw $e;
+                    }
+                }
+            } while (true);
 
             ReservaEstadoHistorial::registrar($pdo, $reservaId, null, 'pendiente_pago', 'cliente', null, 'Reserva creada, espacio bloqueado por ' . $holdMinutes . ' min');
 

@@ -20,7 +20,7 @@ $logoNegocio = Configuracion::get('logo_path', null);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars($nombreNegocio) ?> — Panel de administración</title>
-<link rel="stylesheet" href="<?= $basePath ?>/assets/css/admin.css">
+<link rel="stylesheet" href="<?= $basePath ?>/assets/css/admin.css?v=4">
 </head>
 <body>
 <div class="shell">
@@ -40,6 +40,7 @@ $logoNegocio = Configuracion::get('logo_path', null);
             <div class="nav-item" data-view="calendario">🗓️ Calendario<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="clientes">👥 Clientes<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="pagos">💳 Pagos</div>
+            <div class="nav-item" data-view="cancelaciones">❌ Cancelaciones</div>
             <div class="nav-item" data-view="reportes">📊 Reportes<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="vehiculos">🚗 Vehículos<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="espacios">🅿️ Espacios</div>
@@ -60,7 +61,10 @@ $logoNegocio = Configuracion::get('logo_path', null);
         <section class="view active" id="view-dashboard">
             <div class="content-header">
                 <div><h2>Dashboard</h2><p>Resumen general de tu cochera</p></div>
-                <button class="btn-sm" id="btn-refrescar-dashboard">↻ Actualizar</button>
+                <div class="header-actions">
+                    <button class="btn-sm sidebar-toggle" id="btn-toggle-sidebar" type="button" title="Ocultar sidebar">⇤ Ocultar sidebar</button>
+                    <button class="btn-sm" id="btn-refrescar-dashboard">↻ Actualizar</button>
+                </div>
             </div>
             <div class="kpi-grid" id="kpi-grid"></div>
             <div class="grid-2">
@@ -149,6 +153,17 @@ $logoNegocio = Configuracion::get('logo_path', null);
             </div>
         </section>
 
+        <!-- Cancelaciones -->
+        <section class="view" id="view-cancelaciones">
+            <div class="content-header"><div><h2>Cancelaciones</h2><p>Solicitudes de cancelación enviadas por los clientes</p></div></div>
+            <div class="panel">
+                <div class="table-wrap"><table id="tabla-cancelaciones">
+                    <thead><tr><th>Reserva</th><th>Espacio</th><th>Cliente</th><th>Celular</th><th>Motivo</th><th>N° operación</th><th>Revisado</th><th>Fecha</th><th>Comprobante</th><th>Acción</th></tr></thead>
+                    <tbody></tbody>
+                </table></div>
+            </div>
+        </section>
+
         <!-- Espacios -->
         <section class="view" id="view-espacios">
             <div class="content-header"><div><h2>Espacios</h2><p>Administra el estado de cada espacio de la cochera</p></div></div>
@@ -219,8 +234,9 @@ $logoNegocio = Configuracion::get('logo_path', null);
 <script src="<?= $basePath ?>/assets/vendor/chart.umd.min.js"></script>
 <script src="<?= $basePath ?>/assets/js/shared/parkingGridRenderer.js"></script>
 <script src="<?= $basePath ?>/assets/js/admin/api.js"></script>
+<script src="<?= $basePath ?>/assets/js/admin/cancelaciones.js"></script>
 <script src="<?= $basePath ?>/assets/js/admin/charts.js"></script>
-<script src="<?= $basePath ?>/assets/js/admin/parkingGridAdmin.js"></script>
-<script src="<?= $basePath ?>/assets/js/admin/dashboard.js"></script>
+<script src="<?= $basePath ?>/assets/js/admin/parkingGridAdmin.js?v=4"></script>
+<script src="<?= $basePath ?>/assets/js/admin/dashboard.js?v=4"></script>
 </body>
 </html>

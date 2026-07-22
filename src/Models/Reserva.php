@@ -27,14 +27,31 @@ class Reserva
         return $row ?: null;
     }
 
+    /**
+     * Búsqueda usada por el "perfil del cliente": localizar su reserva sin necesidad
+     * de cuenta, validando código + celular como par de identificación.
+     */
+    public static function findByCodigoAndCelular(string $codigo, string $celular): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT r.*, e.codigo AS espacio_codigo FROM reservas r
+             JOIN espacios e ON e.id = r.espacio_id
+             WHERE r.codigo = :codigo AND r.cliente_celular = :celular'
+        );
+        $stmt->execute(['codigo' => $codigo, 'celular' => $celular]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public static function generarCodigo(\PDO $pdo): string
     {
-        $stmt = $pdo->prepare(
-            "SELECT COUNT(*) AS n FROM reservas WHERE DATE(created_at) = CURDATE()"
-        );
-        $stmt->execute();
-        $n = (int) $stmt->fetch()['n'] + 1;
-        return 'RES-' . date('Ymd') . '-' . str_pad((string) $n, 4, '0', STR_PAD_LEFT);
+        do {
+            $codigo = 'RES-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4)));
+            $stmt = $pdo->prepare('SELECT 1 FROM reservas WHERE codigo = :codigo');
+            $stmt->execute(['codigo' => $codigo]);
+        } while ($stmt->fetch());
+
+        return $codigo;
     }
 
     public static function actualizarEstado(int $id, string $estado, ?string $nota = null): void
