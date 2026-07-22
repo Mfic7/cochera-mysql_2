@@ -157,5 +157,10 @@ $basePath = $config['app_base_path'];
 <script src="<?= $basePath ?>/assets/js/client/holdTimer.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/reservationForm.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/main.js"></script>
+
+<script src="<?= $basePath ?>/assets/js/client/reservationForm.js"></script>
+<script src="<?= $basePath ?>/assets/js/client/cancelacionRules.js"></script>
+<script src="<?= $basePath ?>/assets/js/client/main.js"></script>
+
 </body>
 </html>

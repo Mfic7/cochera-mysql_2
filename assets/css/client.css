@@ -245,3 +245,28 @@ input, select {
     line-height: 1;
 }
 .app-toast-close:hover { background: rgba(255,255,255,0.3); }
+
+.cancelacion-info {
+  background: #fff7e6;
+  border: 1px solid #ffe0a3;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+}
+
+.cancelacion-bloqueado {
+  background: #fdecea;
+  border: 1px solid #f5c6c0;
+  color: #a12a1c;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.9rem;
+}
+
+.btn-danger {
+  background: #d9363e;
+  color: #fff;
+}
+
+.cancelacion-mensaje.ok { color: #1a7f37; }
+.cancelacion-mensaje.error { color: #a12a1c; }

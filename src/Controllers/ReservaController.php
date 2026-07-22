@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Controller;
+use App\Database;
 use App\Models\Reserva;
 use App\Services\EspacioAvailabilityService;
 use App\Services\ReservaConflictException;
@@ -81,8 +82,26 @@ class ReservaController extends Controller
         $this->json($this->presentar($reserva));
     }
 
+    /**
+     * Devuelve el último pago rechazado de la reserva (si existe), para que
+     * el cliente vea el motivo del rechazo en su pantalla.
+     */
+    private function ultimoRechazo(int $reservaId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT motivo_rechazo, revisado_en FROM pagos
+             WHERE reserva_id = :id AND estado = 'rechazado'
+             ORDER BY revisado_en DESC LIMIT 1"
+        );
+        $stmt->execute(['id' => $reservaId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     private function presentar(array $reserva): array
     {
+        $rechazo = $this->ultimoRechazo((int) $reserva['id']);
+
         return [
             'id' => (int) $reserva['id'],
             'codigo' => $reserva['codigo'],
@@ -100,6 +119,10 @@ class ReservaController extends Controller
             'monto_restante' => (float) $reserva['monto_restante'],
             'estado' => $reserva['estado'],
             'hold_expira_en' => Dates::iso($reserva['hold_expira_en']),
+            'ultimo_rechazo' => $rechazo ? [
+                'motivo' => $rechazo['motivo_rechazo'],
+                'fecha' => Dates::iso($rechazo['revisado_en']),
+            ] : null,
         ];
     }
 }
