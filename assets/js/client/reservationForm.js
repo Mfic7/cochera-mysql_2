@@ -20,8 +20,6 @@ const ReservationForm = (() => {
             'metodo-detalle', 'numero-operacion', 'comprobante', 'btn-enviar-comprobante', 'btn-abrir-cancelacion', 'panel-cancelacion',
             'cancelacion-codigo', 'cancelacion-motivo', 'cancelacion-numero-operacion', 'cancelacion-comprobante',
             'btn-solicitar-cancelacion', 'cancelacion-banner-error', 'stepper', 'banner-error', 'info-direccion', 'info-horario', 'info-telefono',
-            'buscar-celular', 'buscar-espacio', 'buscar-banner-error', 'btn-buscar-reserva',
-            'buscar-resultado', 'buscar-r-codigo', 'buscar-r-espacio', 'buscar-r-fecha', 'buscar-r-estado', 'btn-buscar-cancelar',
         ].forEach((id) => { el[id] = document.getElementById(id); });
     }
 
@@ -62,6 +60,9 @@ const ReservationForm = (() => {
 
         await reloadGrid();
 
+        // Si hay una reserva guardada en localStorage, cargarla para mantener acceso a la cancelación
+        await tryRestoreReservationFromStorage();
+
         ['fecha', 'hora', 'horas'].forEach((id) => el[id].addEventListener('change', () => {
             if (!state.reserva) reloadGrid();
             actualizarResumen();
@@ -90,81 +91,59 @@ const ReservationForm = (() => {
         el['btn-enviar-comprobante'].addEventListener('click', enviarComprobante);
         el['btn-abrir-cancelacion'].addEventListener('click', mostrarPanelCancelacion);
         el['btn-solicitar-cancelacion'].addEventListener('click', solicitarCancelacion);
-        el['btn-buscar-reserva'].addEventListener('click', buscarReservaCliente);
-        el['btn-buscar-cancelar'].addEventListener('click', mostrarPanelCancelacion);
-
-        // Mismo formateo/validación de celular que en el formulario principal
-        el['buscar-celular'].addEventListener('input', () => formatearCelular(el['buscar-celular']));
-        el['buscar-celular'].addEventListener('keypress', (e) => {
-            if (!/[0-9]/.test(e.key)) e.preventDefault();
-        });
     }
 
-    // --- Búsqueda de reserva existente (cliente), por celular + número de espacio ---
-
-    async function buscarReservaCliente() {
-        hideBuscarError();
-        const celular = el['buscar-celular'].value.trim().replace(/[\s-]/g, '');
-        const numeroEspacio = el['buscar-espacio'].value.trim();
-
-        if (!celular) return showBuscarError('Ingresa tu número de celular.');
-        if (!numeroEspacio) return showBuscarError('Ingresa el número de espacio que reservaste.');
-
-        el['btn-buscar-reserva'].disabled = true;
-        el['btn-buscar-reserva'].textContent = 'Buscando…';
-
+    // --- Persistencia en localStorage para mantener la reserva visible al recargar ---
+    function saveReservationToStorage(reserva) {
         try {
-            const reserva = await Api.buscarReserva(celular, numeroEspacio);
+            localStorage.setItem('reserva_id', String(reserva.id));
+            localStorage.setItem('reserva_token', String(reserva.token));
+        } catch (e) { /* ignore */ }
+    }
+
+    function clearReservationStorage() {
+        try {
+            localStorage.removeItem('reserva_id');
+            localStorage.removeItem('reserva_token');
+        } catch (e) { /* ignore */ }
+    }
+
+    async function tryRestoreReservationFromStorage() {
+        const id = localStorage.getItem('reserva_id');
+        const token = localStorage.getItem('reserva_token');
+        if (!id || !token) return;
+        try {
+            const reserva = await Api.obtenerReserva(id, token);
+            // Si la reserva ya terminó (cancelada/vencida), no bloquear el formulario: limpiar y seguir normal
+            if (['cancelada', 'vencida'].includes(reserva.estado)) {
+                clearReservationStorage();
+                return;
+            }
+            // Si existe y sigue activa, asignar al estado y actualizar UI
             state.reserva = reserva;
             state.lastEstado = reserva.estado;
-            mostrarResultadoBusqueda(reserva);
+            setFormDisabled(true);
+            el['btn-reservar'].hidden = true;
+            mostrarAvisoReservaEnCurso(reserva);
+            if (reserva.estado === 'pendiente_pago') {
+                mostrarPanelPago();
+                HoldTimer.start(reserva.hold_expira_en, el['hold-timer'], onHoldExpired);
+            }
+            actualizarStepper(reserva.estado);
+            actualizarCancelacionPanel();
             startPolling();
         } catch (e) {
-            if (e.status === 404) {
-                showBuscarError('No encontramos una reserva con ese celular y número de espacio.');
-            } else if (e.status === 422 && e.data && e.data.error) {
-                showBuscarError(e.data.error);
-            } else {
-                showBuscarError('No se pudo buscar tu reserva. Intenta nuevamente.');
-            }
-        } finally {
-            el['btn-buscar-reserva'].disabled = false;
-            el['btn-buscar-reserva'].textContent = 'Buscar reserva';
+            // token inválido o reserva no encontrada -> limpiar
+            clearReservationStorage();
         }
     }
 
-    function mostrarResultadoBusqueda(reserva) {
-        el['buscar-resultado'].hidden = false;
-        el['buscar-r-codigo'].textContent = reserva.codigo;
-        el['buscar-r-espacio'].textContent = reserva.espacio_codigo || '—';
-        el['buscar-r-fecha'].textContent = reserva.fecha_hora_inicio;
-        el['buscar-r-estado'].textContent = etiquetaEstado(reserva.estado);
-
-        const inicio = new Date(reserva.fecha_hora_inicio).getTime();
-        const minutosRestantes = (inicio - Date.now()) / 60000;
-        const canCancel = minutosRestantes >= 20 && !['cancelada', 'vencida', 'pago_completo'].includes(reserva.estado);
-        el['btn-buscar-cancelar'].hidden = !canCancel;
-    }
-
-    function etiquetaEstado(estado) {
-        const map = {
-            pendiente_pago: 'Pendiente de pago',
-            en_validacion: 'En validación',
-            adelanto_pagado: 'Confirmada',
-            pago_completo: 'Pago completo',
-            cancelada: 'Cancelada',
-            vencida: 'Vencida',
-        };
-        return map[estado] || estado;
-    }
-
-    function showBuscarError(msg) {
-        el['buscar-banner-error'].textContent = msg;
-        el['buscar-banner-error'].hidden = false;
-    }
-
-    function hideBuscarError() {
-        el['buscar-banner-error'].hidden = true;
+    // Muestra un aviso claro explicando por qué el formulario está bloqueado
+    function mostrarAvisoReservaEnCurso(reserva) {
+        showError(
+            `Ya tienes una reserva en curso (código ${reserva.codigo}) para el espacio ${reserva.espacio_codigo}. ` +
+            'Completa el pago o espera a que se cancele/venza para poder crear una nueva.'
+        );
     }
 
     async function reloadGrid() {
@@ -278,6 +257,7 @@ const ReservationForm = (() => {
             };
             const reserva = await Api.crearReserva(payload);
             state.reserva = reserva;
+            saveReservationToStorage(reserva);
             setFormDisabled(true);
             el['btn-reservar'].hidden = true;
             HoldTimer.start(reserva.hold_expira_en, el['hold-timer'], onHoldExpired);
@@ -310,7 +290,7 @@ const ReservationForm = (() => {
         el['metodo-tabs'].innerHTML = '';
         state.metodosPago.forEach((m, i) => {
             const tab = document.createElement('div');
-            tab.className = 'tab' + (i === 0 ? ' active' : '');
+            tab.className = 'tab tab-' + m.tipo + (i === 0 ? ' active' : '');
             tab.textContent = etiquetaMetodo(m.tipo);
             tab.addEventListener('click', () => seleccionarMetodo(m.tipo));
             el['metodo-tabs'].appendChild(tab);
@@ -327,7 +307,7 @@ const ReservationForm = (() => {
     function seleccionarMetodo(tipo) {
         state.metodoActivo = tipo;
         [...el['metodo-tabs'].children].forEach((tab) => {
-            tab.classList.toggle('active', tab.textContent === etiquetaMetodo(tipo));
+            tab.classList.toggle('active', tab.classList.contains('tab-' + tipo));
         });
         const metodo = state.metodosPago.find((m) => m.tipo === tipo);
         const monto = state.reserva ? Number(state.reserva.monto_adelanto).toFixed(2) : '0.00';
@@ -340,7 +320,7 @@ const ReservationForm = (() => {
         }
 
         el['metodo-detalle'].innerHTML = `
-            <div class="metodo-card">
+            <div class="metodo-card metodo-${tipo}">
                 <p><strong>Paga con ${etiquetaMetodo(tipo)}</strong></p>
                 <p class="muted">${tipo === 'transferencia' ? 'Realiza la transferencia a la cuenta indicada' : 'Escanea el código QR con tu app de ' + etiquetaMetodo(tipo)}</p>
                 <div class="qr-row">
@@ -375,6 +355,7 @@ const ReservationForm = (() => {
         try {
             const reserva = await Api.subirComprobante(state.reserva.id, formData);
             state.reserva = reserva;
+            saveReservationToStorage(reserva);
             actualizarStepper(reserva.estado);
             el['panel-pago'].querySelectorAll('input, .tab').forEach((n) => n.setAttribute('disabled', 'disabled'));
             el['btn-enviar-comprobante'].textContent = 'Comprobante enviado ✓';
@@ -400,58 +381,24 @@ const ReservationForm = (() => {
         }
         // Si la reserva acaba de pasar a 'adelanto_pagado', notificar al usuario
         if (state.lastEstado !== 'adelanto_pagado' && estado === 'adelanto_pagado') {
-            showToast('Tu reserva ha sido confirmada. Tienes 20 minutos antes de la hora reservada para cancelar. Pasado ese tiempo, no habrá devolución del dinero.', 20000);
+            showToast('Tu reserva ha sido confirmada. Cualquier cancelación debe realizarse hasta 20 minutos antes de la hora de ingreso.');
         }
         state.lastEstado = estado;
         actualizarCancelacionPanel();
     }
 
-    // Muestra una notificación destacada en el centro de la pantalla, con sonido
+    // Muestra una notificación breve en pantalla
     function showToast(msg, timeout = 6000) {
-        reproducirSonidoNotificacion();
-
-        const overlay = document.createElement('div');
-        overlay.className = 'app-toast-overlay';
-
-        const t = document.createElement('div');
+        let t = document.createElement('div');
         t.className = 'app-toast';
-        t.innerHTML = `
-            <div class="app-toast-icon">🔔</div>
-            <div class="app-toast-msg">${msg}</div>
-            <button class="app-toast-close" type="button" aria-label="Cerrar">✕</button>
-        `;
-        overlay.appendChild(t);
-        document.body.appendChild(overlay);
-
-        requestAnimationFrame(() => overlay.classList.add('visible'));
-
-        const cerrar = () => {
-            overlay.classList.remove('visible');
-            setTimeout(() => overlay.remove(), 400);
-        };
-
-        t.querySelector('.app-toast-close').addEventListener('click', cerrar);
-        setTimeout(cerrar, timeout);
-    }
-
-    // Genera un sonido corto de notificación sin necesidad de archivos de audio
-    function reproducirSonidoNotificacion() {
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            [0, 0.15].forEach((delay, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = i === 0 ? 880 : 1175;
-                gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
-                gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + delay + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.3);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(ctx.currentTime + delay);
-                osc.stop(ctx.currentTime + delay + 0.3);
-            });
-        } catch (e) { /* el navegador puede bloquear audio sin interacción previa */ }
+        t.textContent = msg;
+        document.body.appendChild(t);
+        // for animation
+        requestAnimationFrame(() => t.classList.add('visible'));
+        setTimeout(() => {
+            t.classList.remove('visible');
+            setTimeout(() => t.remove(), 400);
+        }, timeout);
     }
 
     function startPolling() {
@@ -461,11 +408,14 @@ const ReservationForm = (() => {
                 const reserva = await Api.obtenerReserva(state.reserva.id, state.reserva.token);
                 state.reserva = { ...state.reserva, ...reserva };
                 actualizarStepper(reserva.estado);
-                // Si el panel de búsqueda está mostrando resultados, mantenerlo sincronizado
-                if (!el['buscar-resultado'].hidden) {
-                    mostrarResultadoBusqueda(state.reserva);
-                }
-                if (['pago_completo', 'cancelada', 'vencida'].includes(reserva.estado)) {
+                // Actualizar persistencia local cuando cambie
+                saveReservationToStorage(state.reserva);
+                if (['cancelada', 'vencida'].includes(reserva.estado)) {
+                    // limpiar almacenamiento para que no vuelva a aparecer la opción de cancelar
+                    clearReservationStorage();
+                    stopPolling();
+                } else if (reserva.estado === 'pago_completo') {
+                    // Si ya se completó el pago, no necesitamos seguir poller
                     stopPolling();
                 }
             } catch (e) { /* silencioso: se reintenta en el próximo tick */ }
@@ -480,6 +430,7 @@ const ReservationForm = (() => {
             return;
         }
         el['cancelacion-codigo'].textContent = state.reserva.codigo;
+        el['cancelacion-tipo'].value = '';
         el['cancelacion-motivo'].value = '';
         el['cancelacion-numero-operacion'].value = '';
         el['cancelacion-comprobante'].value = '';
@@ -519,10 +470,14 @@ const ReservationForm = (() => {
         hideCancelacionError();
         if (!state.reserva) return;
 
+        const tipo = el['cancelacion-tipo'].value.trim();
         const motivo = el['cancelacion-motivo'].value.trim();
         const numeroOperacion = el['cancelacion-numero-operacion'].value.trim();
         const comprobante = el['cancelacion-comprobante'].files[0];
 
+        if (!tipo) {
+            return showCancelacionError('Selecciona el tipo de cancelación.');
+        }
         if (!motivo) {
             return showCancelacionError('Ingresa el motivo de la cancelación.');
         }
@@ -539,6 +494,7 @@ const ReservationForm = (() => {
         try {
             const formData = new FormData();
             formData.append('token', state.reserva.token);
+            formData.append('tipo', tipo);
             formData.append('motivo', motivo);
             formData.append('numero_operacion', numeroOperacion);
             formData.append('comprobante', comprobante);

@@ -54,6 +54,28 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 }
 @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
 
+/* Posicionamiento explícito del layout principal */
+.layout > .panel:nth-child(1) { grid-column: 1; grid-row: 1 / span 2; }
+.layout > .panel:nth-child(2) { grid-column: 2; grid-row: 1; }
+
+#panel-buscar-reserva {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    margin-top: -12px;
+}
+
+#panel-pago {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+#panel-cancelacion {
+    grid-column: 3;
+    grid-row: 2;
+    align-self: start;
+}
+
 .panel {
     background: var(--card);
     border: 1px solid var(--border);
@@ -136,6 +158,11 @@ input, select {
 }
 .tab.active { border-color: var(--gold); background: #fff8e1; font-weight: 700; }
 
+/* Colores de marca por método de pago */
+.tab-yape.active { border-color: #7c1fa2; background: #f4e6fa; color: #7c1fa2; }
+.tab-plin.active { border-color: #00b8b0; background: #e0fbf9; color: #00857f; }
+.tab-transferencia.active { border-color: var(--ink); background: #f0f0f0; }
+
 .metodo-card { background: #fafafa; border-radius: 10px; padding: 14px; }
 .metodo-card .qr-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 .metodo-card .qr-placeholder {
@@ -150,6 +177,28 @@ input, select {
 .metodo-card .cuenta strong { display: block; font-size: 14px; }
 .aviso-comprobante {
     background: #fff8e1; border-radius: 8px; padding: 10px; margin-top: 12px; font-size: 12px;
+}
+
+/* Tarjetas de método de pago con color de marca */
+.metodo-card.metodo-yape {
+    background: linear-gradient(135deg, #f4e6fa, #ffffff);
+    border: 1px solid #e3b8f5;
+}
+.metodo-card.metodo-yape .qr-placeholder,
+.metodo-card.metodo-yape .qr-img { border-color: #7c1fa2; }
+.metodo-card.metodo-yape strong { color: #7c1fa2; }
+
+.metodo-card.metodo-plin {
+    background: linear-gradient(135deg, #e0fbf9, #ffffff);
+    border: 1px solid #7fe0da;
+}
+.metodo-card.metodo-plin .qr-placeholder,
+.metodo-card.metodo-plin .qr-img { border-color: #00b8b0; }
+.metodo-card.metodo-plin strong { color: #00857f; }
+
+.metodo-card.metodo-transferencia {
+    background: linear-gradient(135deg, #f4f5f7, #ffffff);
+    border: 1px solid var(--border);
 }
 
 .bottom-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 0 28px 28px; }
@@ -172,10 +221,16 @@ input, select {
 .badges { display: flex; gap: 12px; }
 .badge {
     flex: 1; text-align: center; padding: 16px 8px; border-radius: 10px; font-weight: 700; color: #fff; font-size: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    transition: transform .15s ease;
 }
-.badge.yape { background: #7c1fa2; }
-.badge.plin { background: #00b8b0; }
-.badge.transferencia { background: #f5f5f5; color: var(--ink); border: 1px solid var(--border); }
+.badge:hover { transform: translateY(-2px); }
+.badge.yape { background: linear-gradient(135deg, #7c1fa2, #9333ea); }
+.badge.plin { background: linear-gradient(135deg, #00b8b0, #06d6cc); }
+.badge.transferencia {
+    background: linear-gradient(135deg, #f8f8f8, #ececec);
+    color: var(--ink); border: 1px solid var(--border);
+}
 
 .muted { color: var(--muted); font-size: 12px; }
 
@@ -245,24 +300,3 @@ input, select {
     line-height: 1;
 }
 .app-toast-close:hover { background: rgba(255,255,255,0.3); }
-
-
-
-/* Posicionamiento explícito del layout principal */
-.layout > .panel:nth-child(1) { grid-column: 1; grid-row: 1; }
-.layout > .panel:nth-child(2) { grid-column: 2; grid-row: 1; }
-
-#panel-buscar-reserva {
-    grid-column: 2;
-    grid-row: 2;
-}
-
-#panel-pago {
-    grid-column: 3;
-    grid-row: 1;
-}
-
-#panel-cancelacion {
-    grid-column: 3;
-    grid-row: 2;
-}
