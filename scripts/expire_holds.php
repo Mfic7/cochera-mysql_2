@@ -7,7 +7,7 @@
 //   Argumentos: C:\xampp\htdocs\cochera-mysql_2\scripts\expire_holds.php
 //   Frecuencia sugerida: cada 1 minuto
 
-require __DIR__ . '/../src/Autoload.php';
+require_once __DIR__ . '/../src/Autoload.php';
 
 use App\Services\EspacioAvailabilityService;
 

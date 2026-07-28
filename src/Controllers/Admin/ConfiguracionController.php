@@ -47,3 +47,4 @@ class ConfiguracionController extends Controller
         $this->json(Configuracion::all());
     }
 }
+

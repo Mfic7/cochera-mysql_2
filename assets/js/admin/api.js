@@ -9,7 +9,7 @@ const AdminApi = (() => {
 
     async function request(path, options = {}) {
         const method = (options.method || 'GET').toUpperCase();
-        const headers = { ...(options.headers || {}) };
+        const headers = { ...options.headers };
         if (!(options.body instanceof FormData)) {
             headers['Content-Type'] = 'application/json';
         }
@@ -18,13 +18,17 @@ const AdminApi = (() => {
         }
         const res = await fetch(base + path, { ...options, method, headers, credentials: 'same-origin' });
         let data = null;
-        try { data = await res.json(); } catch (e) { /* sin cuerpo */ }
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.warn('Respuesta sin cuerpo JSON:', e);
+        }
         if (res.status === 401) {
             window.location.href = window.APP_BASE + '/admin/login.php';
             return null;
         }
         if (!res.ok) {
-            const err = new Error((data && data.error) || 'Error de red');
+            const err = new Error(data?.error || 'Error de red');
             err.status = res.status;
             err.data = data;
             throw err;

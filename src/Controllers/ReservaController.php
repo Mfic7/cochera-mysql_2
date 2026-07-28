@@ -16,6 +16,8 @@ use App\Support\Validator;
 
 class ReservaController extends Controller
 {
+    private const RESERVA_NO_ENCONTRADA = 'Reserva no encontrada';
+
     public function crear(): void
     {
         $input = $this->input();
@@ -55,7 +57,7 @@ class ReservaController extends Controller
         $token = $_GET['token'] ?? null;
 
         if (!$reserva || $token === null || !hash_equals($reserva['token'], $token)) {
-            $this->error('Reserva no encontrada', 404);
+            $this->error(self::RESERVA_NO_ENCONTRADA, 404);
         }
 
         $this->json($this->presentar($reserva));
@@ -104,43 +106,19 @@ class ReservaController extends Controller
     public function cancelacion(string $id): void
     {
         $reservaId = (int) $id;
-        $reserva = Reserva::find($reservaId);
-        $token = $_POST['token'] ?? null;
 
-        if (!$reserva || $token === null || !hash_equals($reserva['token'], $token)) {
-            $this->error('Reserva no encontrada', 404);
+        if ($this->validarReservaParaCancelar($reservaId) === null) {
             return;
         }
 
-        if (in_array($reserva['estado'], ['cancelada', 'vencida'], true)) {
-            $this->error('Esta reserva ya no se puede cancelar.', 409);
+        $datos = $this->validarDatosCancelacion();
+        if ($datos === null) {
             return;
         }
+        [$motivo, $numeroOperacion] = $datos;
 
-        if (Cancelacion::pendienteParaReserva($reservaId)) {
-            $this->error('Ya existe una solicitud de cancelación pendiente para esta reserva.', 409);
-            return;
-        }
-
-        $motivo = trim((string) ($_POST['motivo'] ?? ''));
-        $numeroOperacion = trim((string) ($_POST['numero_operacion'] ?? ''));
-        if ($motivo === '') {
-            $this->error('Ingresa el motivo de la cancelación.', 422);
-            return;
-        }
-        if ($numeroOperacion === '') {
-            $this->error('Ingresa el número de operación del pago.', 422);
-            return;
-        }
-        if (!isset($_FILES['comprobante']) || $_FILES['comprobante']['error'] === UPLOAD_ERR_NO_FILE) {
-            $this->error('Adjunta el comprobante de pago.', 422);
-            return;
-        }
-
-        try {
-            $comprobantePath = FileUploadService::guardarEvidenciaCancelacion($_FILES['comprobante'], $reservaId);
-        } catch (FileUploadException $e) {
-            $this->error($e->getMessage(), 422);
+        $comprobantePath = $this->intentarGuardarComprobante($reservaId);
+        if ($comprobantePath === null) {
             return;
         }
 
@@ -153,6 +131,64 @@ class ReservaController extends Controller
         ]);
 
         $this->json(['ok' => true, 'mensaje' => 'Solicitud de cancelación enviada. El equipo la revisará.']);
+    }
+
+    /** Verifica token, estado, y que no exista ya una solicitud pendiente. Devuelve la reserva o null (y ya emitió el error). */
+    private function validarReservaParaCancelar(int $reservaId): ?array
+    {
+        $reserva = Reserva::find($reservaId);
+        $token = $_POST['token'] ?? null;
+        $tokenValido = $reserva && $token !== null && hash_equals($reserva['token'], $token);
+
+        if (!$tokenValido) {
+            $this->error(self::RESERVA_NO_ENCONTRADA, 404);
+            return null;
+        }
+
+        $error = match (true) {
+            in_array($reserva['estado'], ['cancelada', 'vencida'], true) => 'Esta reserva ya no se puede cancelar.',
+            Cancelacion::pendienteParaReserva($reservaId) => 'Ya existe una solicitud de cancelación pendiente para esta reserva.',
+            default => null,
+        };
+
+        if ($error !== null) {
+            $this->error($error, 409);
+            return null;
+        }
+
+        return $reserva;
+    }
+
+    /** Valida motivo, número de operación y que venga un archivo adjunto. Devuelve [motivo, numeroOperacion] o null. */
+    private function validarDatosCancelacion(): ?array
+    {
+        $motivo = trim((string) ($_POST['motivo'] ?? ''));
+        $numeroOperacion = trim((string) ($_POST['numero_operacion'] ?? ''));
+        $sinArchivo = !isset($_FILES['comprobante']) || $_FILES['comprobante']['error'] === UPLOAD_ERR_NO_FILE;
+
+        $error = match (true) {
+            $motivo === '' => 'Ingresa el motivo de la cancelación.',
+            $numeroOperacion === '' => 'Ingresa el número de operación del pago.',
+            $sinArchivo => 'Adjunta el comprobante de pago.',
+            default => null,
+        };
+
+        if ($error !== null) {
+            $this->error($error, 422);
+            return null;
+        }
+
+        return [$motivo, $numeroOperacion];
+    }
+
+    private function intentarGuardarComprobante(int $reservaId): ?string
+    {
+        try {
+            return FileUploadService::guardarComprobanteCancelacion($_FILES['comprobante'], $reservaId);
+        } catch (FileUploadException $e) {
+            $this->error($e->getMessage(), 422);
+            return null;
+        }
     }
 
     private function ultimoRechazo(int $reservaId): ?array

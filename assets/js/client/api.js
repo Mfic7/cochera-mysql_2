@@ -7,12 +7,16 @@ const Api = (() => {
             credentials: 'same-origin',
             headers: options.body instanceof FormData
                 ? options.headers
-                : { 'Content-Type': 'application/json', ...(options.headers || {}) },
+                : { 'Content-Type': 'application/json', ...options.headers },
         });
         let data = null;
-        try { data = await res.json(); } catch (e) { /* respuesta sin cuerpo */ }
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.warn('Respuesta sin cuerpo JSON:', e);
+        }
         if (!res.ok) {
-            const err = new Error((data && data.error) || 'Error de red');
+            const err = new Error(data?.error || 'Error de red');
             err.status = res.status;
             err.data = data;
             throw err;

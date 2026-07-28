@@ -11,17 +11,19 @@ use App\Services\EspacioAvailabilityService;
 
 class DashboardController extends Controller
 {
+    private const FORMATO_FECHA_HORA = 'Y-m-d H:i:s';
+
     public function kpis(): void
     {
         $this->requireAdmin();
         $pdo = Database::connection();
-        $hoy = date('Y-m-d');
 
         $totalReservasHoy = (int) $pdo->query(
             "SELECT COUNT(*) AS n FROM reservas WHERE DATE(created_at) = CURDATE()"
         )->fetch()['n'];
 
-        $disponibilidad = EspacioAvailabilityService::disponibilidad(date('Y-m-d H:i:s'), date('Y-m-d H:i:s'));
+        $ahora = date(self::FORMATO_FECHA_HORA);
+        $disponibilidad = EspacioAvailabilityService::disponibilidad($ahora, $ahora);
 
         $ingresosHoy = (float) $pdo->query(
             "SELECT COALESCE(SUM(monto),0) AS s FROM pagos WHERE estado='aprobado' AND DATE(revisado_en) = CURDATE()"
@@ -64,7 +66,7 @@ class DashboardController extends Controller
     public function ocupacion(): void
     {
         $this->requireAdmin();
-        $ahora = date('Y-m-d H:i:s');
+        $ahora = date(self::FORMATO_FECHA_HORA);
         $this->json(EspacioAvailabilityService::disponibilidad($ahora, $ahora));
     }
 

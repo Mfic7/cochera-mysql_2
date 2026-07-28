@@ -10,6 +10,15 @@ const ReservationForm = (() => {
         lastEstado: null,
     };
 
+    const ESTADO_LABEL_CLIENTE = {
+        pendiente_pago: 'Pendiente de pago',
+        en_validacion: 'En validación',
+        adelanto_pagado: 'Confirmada (50% pagado)',
+        pago_completo: 'Pago completo',
+        cancelada: 'Cancelada',
+        vencida: 'Vencida',
+    };
+
     const el = {};
 
     function cacheEls() {
@@ -20,6 +29,9 @@ const ReservationForm = (() => {
             'metodo-detalle', 'numero-operacion', 'comprobante', 'btn-enviar-comprobante', 'btn-abrir-cancelacion', 'panel-cancelacion',
             'cancelacion-codigo', 'cancelacion-motivo', 'cancelacion-numero-operacion', 'cancelacion-comprobante',
             'btn-solicitar-cancelacion', 'cancelacion-banner-error', 'stepper', 'banner-error', 'info-direccion', 'info-horario', 'info-telefono',
+            // Buscar / ver reserva existente
+            'buscar-celular', 'buscar-espacio', 'btn-buscar-reserva', 'buscar-banner-error',
+            'buscar-resultado', 'buscar-r-codigo', 'buscar-r-espacio', 'buscar-r-fecha', 'buscar-r-estado', 'btn-buscar-cancelar',
         ].forEach((id) => { el[id] = document.getElementById(id); });
     }
 
@@ -35,7 +47,7 @@ const ReservationForm = (() => {
     // sufijo de zona horaria que venga del backend (evita desfases tipo UTC vs Perú).
     function parseFechaLocal(isoString) {
         if (!isoString) return null;
-        const match = String(isoString).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+        const match = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/.exec(String(isoString));
         if (!match) return new Date(isoString);
         const y = Number(match[1]);
         const mo = Number(match[2]);
@@ -44,6 +56,11 @@ const ReservationForm = (() => {
         const mi = Number(match[5]);
         const s = Number(match[6]);
         return new Date(y, mo - 1, d, h, mi, s);
+    }
+
+    function formatearFechaHora(isoString) {
+        const f = parseFechaLocal(isoString);
+        return f ? f.toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
     }
 
     async function init() {
@@ -99,13 +116,17 @@ const ReservationForm = (() => {
             if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key)) e.preventDefault();
         });
         el['cliente-celular'].addEventListener('keypress', (e) => {
-            if (!/[0-9]/.test(e.key)) e.preventDefault();
+            if (!/\d/.test(e.key)) e.preventDefault();
         });
 
         el['btn-reservar'].addEventListener('click', crearReserva);
         el['btn-enviar-comprobante'].addEventListener('click', enviarComprobante);
         el['btn-abrir-cancelacion'].addEventListener('click', mostrarPanelCancelacion);
         el['btn-solicitar-cancelacion'].addEventListener('click', solicitarCancelacion);
+
+        // Buscar / ver reserva existente
+        el['btn-buscar-reserva'].addEventListener('click', buscarReserva);
+        el['btn-buscar-cancelar'].addEventListener('click', mostrarPanelCancelacion);
     }
 
     // --- Persistencia en localStorage para mantener la reserva visible al recargar ---
@@ -113,14 +134,18 @@ const ReservationForm = (() => {
         try {
             localStorage.setItem('reserva_id', String(reserva.id));
             localStorage.setItem('reserva_token', String(reserva.token));
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            console.warn('No se pudo guardar la reserva en localStorage:', e);
+        }
     }
 
     function clearReservationStorage() {
         try {
             localStorage.removeItem('reserva_id');
             localStorage.removeItem('reserva_token');
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            console.warn('No se pudo limpiar la reserva de localStorage:', e);
+        }
     }
 
     async function tryRestoreReservationFromStorage() {
@@ -149,6 +174,7 @@ const ReservationForm = (() => {
             startPolling();
         } catch (e) {
             // token inválido o reserva no encontrada -> limpiar
+            console.warn('No se pudo restaurar la reserva desde localStorage:', e);
             clearReservationStorage();
         }
     }
@@ -173,6 +199,7 @@ const ReservationForm = (() => {
                 onSelect: seleccionarEspacio,
             });
         } catch (e) {
+            console.warn('No se pudo cargar el mapa de espacios:', e);
             el['parking-grid'].innerHTML = '<p class="loading">No se pudo cargar el mapa de espacios.</p>';
         }
     }
@@ -222,9 +249,11 @@ const ReservationForm = (() => {
 
     function formatearCelular(input) {
         const limpio = input.value.replace(/\D/g, '').slice(0, 9);
-        input.value = limpio.replace(/(\d{3})(\d{3})(\d{0,3})/, (m, a, b, c) =>
-            c ? `${a} ${b} ${c}` : b ? `${a} ${b}` : a
-        );
+        input.value = limpio.replace(/(\d{3})(\d{3})(\d{0,3})/, (m, a, b, c) => {
+            if (c) return `${a} ${b} ${c}`;
+            if (b) return `${a} ${b}`;
+            return a;
+        });
     }
 
     function filtrarSoloLetras(input) {
@@ -422,7 +451,9 @@ const ReservationForm = (() => {
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
             oscillator.start();
             oscillator.stop(ctx.currentTime + 0.5);
-        } catch (e) { /* el navegador bloqueó el audio o no lo soporta */ }
+        } catch (e) {
+            console.warn('No se pudo reproducir el sonido de notificación:', e);
+        }
     }
 
     // Muestra una notificación centrada, con overlay oscuro, ícono y sonido
@@ -468,8 +499,78 @@ const ReservationForm = (() => {
                     // Si ya se completó el pago, no necesitamos seguir poller
                     stopPolling();
                 }
-            } catch (e) { /* silencioso: se reintenta en el próximo tick */ }
+            } catch (e) {
+                // silencioso: se reintenta en el próximo tick
+                console.warn('Error al refrescar el estado de la reserva:', e);
+            }
         }, 5000);
+    }
+
+    // --- Buscar reserva existente (celular + espacio) ---
+
+    async function buscarReserva() {
+        hideBuscarError();
+
+        const celular = el['buscar-celular'].value.trim().replace(/[\s-]/g, '');
+        const espacioCodigo = el['buscar-espacio'].value.trim();
+
+        if (!celular) return showBuscarError('Ingresa tu número de celular.');
+        if (!espacioCodigo) return showBuscarError('Ingresa el número de espacio.');
+
+        el['btn-buscar-reserva'].disabled = true;
+        el['btn-buscar-reserva'].textContent = 'Buscando…';
+
+        try {
+            const reserva = await Api.buscarReserva(celular, espacioCodigo);
+
+            // Pinta el resultado en el panel de la derecha
+            el['buscar-r-codigo'].textContent = reserva.codigo;
+            el['buscar-r-espacio'].textContent = reserva.espacio_codigo;
+            el['buscar-r-fecha'].textContent = formatearFechaHora(reserva.fecha_hora_inicio);
+            el['buscar-r-estado'].textContent = ESTADO_LABEL_CLIENTE[reserva.estado] || reserva.estado;
+            el['buscar-resultado'].hidden = false;
+
+            const puedeCancelar = !['cancelada', 'vencida', 'pago_completo'].includes(reserva.estado);
+            el['btn-buscar-cancelar'].hidden = !puedeCancelar;
+
+            // Reutiliza el mismo flujo de pago/cancelación/polling que ya existe
+            // para una reserva recién creada, para no duplicar lógica.
+            state.reserva = reserva;
+            state.lastEstado = reserva.estado;
+            saveReservationToStorage(reserva);
+
+            if (!['cancelada', 'vencida'].includes(reserva.estado)) {
+                setFormDisabled(true);
+                el['btn-reservar'].hidden = true;
+                mostrarAvisoReservaEnCurso(reserva);
+                if (reserva.estado === 'pendiente_pago' && reserva.hold_expira_en) {
+                    mostrarPanelPago();
+                    HoldTimer.start(reserva.hold_expira_en, el['hold-timer'], onHoldExpired);
+                }
+                actualizarStepper(reserva.estado);
+                actualizarCancelacionPanel();
+                startPolling();
+            }
+        } catch (e) {
+            el['buscar-resultado'].hidden = true;
+            if (e.status === 404) {
+                showBuscarError('No encontramos ninguna reserva con esos datos. Verifica el celular y el número de espacio.');
+            } else {
+                showBuscarError(e.data?.error || 'No se pudo buscar la reserva. Intenta nuevamente.');
+            }
+        } finally {
+            el['btn-buscar-reserva'].disabled = false;
+            el['btn-buscar-reserva'].textContent = 'Buscar reserva';
+        }
+    }
+
+    function showBuscarError(msg) {
+        el['buscar-banner-error'].textContent = msg;
+        el['buscar-banner-error'].hidden = false;
+    }
+
+    function hideBuscarError() {
+        el['buscar-banner-error'].hidden = true;
     }
 
     function mostrarPanelCancelacion() {
@@ -522,6 +623,15 @@ const ReservationForm = (() => {
 
         // siempre actualizamos el código por si cambió
         el['cancelacion-codigo'].textContent = state.reserva.codigo;
+
+        // También refleja la posibilidad de cancelar en el botón del panel de búsqueda
+        if (el['btn-buscar-cancelar'] && !el['buscar-resultado'].hidden) {
+            el['btn-buscar-cancelar'].hidden = false;
+            el['btn-buscar-cancelar'].disabled = !canCancel;
+            el['btn-buscar-cancelar'].textContent = canCancel
+                ? 'Solicitar cancelación'
+                : 'Plazo de cancelación vencido';
+        }
     }
 
     async function solicitarCancelacion() {

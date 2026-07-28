@@ -61,3 +61,4 @@ $router->patch('admin/configuracion', fn () => (new AdminConfiguracionController
 $router->get('admin/cancelaciones', fn () => (new CancelacionAdminController())->listar());
 $router->get('admin/cancelaciones/{id}/comprobante', fn ($id) => (new CancelacionAdminController())->comprobante($id));
 $router->patch('admin/cancelaciones/{id}', fn ($id) => (new CancelacionAdminController())->decidir($id));
+

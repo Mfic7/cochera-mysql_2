@@ -63,6 +63,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
     flex: 1;
     padding: 24px 28px;
     margin-left: 230px;
+    overflow-x: hidden;
 }
 .sidebar .brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 20px; }
 .sidebar .brand-badge {
@@ -88,7 +89,6 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .shell.sidebar-collapsed .sidebar { display: none !important; width: 0 !important; min-width: 0 !important; padding: 0 !important; overflow: hidden !important; }
 .shell.sidebar-collapsed .content { margin-left: 0; padding-left: 28px; }
 .shell.sidebar-collapsed #btn-toggle-sidebar-inline { display: none !important; }
-.content { flex: 1; padding: 24px 28px; margin-left: 230px; overflow-x: hidden; }
 .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
 .content-header h2 { margin: 0; font-size: 22px; }
 .content-header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }

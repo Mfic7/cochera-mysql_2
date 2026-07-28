@@ -1,9 +1,9 @@
 <?php
-require __DIR__ . '/../src/Autoload.php';
+require_once __DIR__ . '/../src/Autoload.php';
 use App\Auth\AdminAuth;
 use App\Models\Configuracion;
 
-$config = require __DIR__ . '/../config/config.php';
+$config = require_once __DIR__ . '/../config/config.php';
 $basePath = $config['app_base_path'];
 
 if (!AdminAuth::check()) {
@@ -110,8 +110,8 @@ $logoNegocio = Configuracion::get('logo_path', null);
         <section class="view" id="view-reservas">
             <div class="content-header"><div><h2>Reservas</h2><p>Gestiona todas las reservas del sistema</p></div></div>
             <div class="toolbar">
-                <input type="date" id="filtro-fecha-reservas">
-                <select id="filtro-estado-reservas">
+                <input type="date" id="filtro-fecha-reservas" aria-label="Filtrar por fecha">
+                <select id="filtro-estado-reservas" aria-label="Filtrar por estado">
                     <option value="">Todos los estados</option>
                     <option value="pendiente_pago">Pendiente de pago</option>
                     <option value="en_validacion">En validación</option>
@@ -134,7 +134,7 @@ $logoNegocio = Configuracion::get('logo_path', null);
         <section class="view" id="view-pagos">
             <div class="content-header"><div><h2>Pagos</h2><p>Revisa y valida los comprobantes de los clientes</p></div></div>
             <div class="toolbar">
-                <select id="filtro-estado-pagos">
+                <select id="filtro-estado-pagos" aria-label="Filtrar por estado de pago">
                     <option value="en_validacion">En validación</option>
                     <option value="aprobado">Aprobados</option>
                     <option value="rechazado">Rechazados</option>
@@ -171,7 +171,7 @@ $logoNegocio = Configuracion::get('logo_path', null);
         <section class="view" id="view-cancelaciones">
             <div class="content-header"><div><h2>Cancelaciones</h2><p>Solicitudes de cancelación enviadas por los clientes</p></div></div>
             <div class="toolbar">
-                <select id="filtro-estado-cancelaciones">
+                <select id="filtro-estado-cancelaciones" aria-label="Filtrar por estado de cancelación">
                     <option value="pendiente">Pendientes</option>
                     <option value="aprobada">Aprobadas</option>
                     <option value="fuera_plazo">Fuera de plazo</option>
@@ -194,19 +194,19 @@ $logoNegocio = Configuracion::get('logo_path', null);
             <div class="panel" style="max-width:480px">
                 <form id="form-configuracion" enctype="multipart/form-data">
                     <div class="form-field">
-                        <label>Logo del negocio</label>
+                        <label for="input-logo">Logo del negocio</label>
                         <div class="logo-preview-row">
                             <img id="logo-preview" src="<?= $logoNegocio ? $basePath . '/storage/' . htmlspecialchars($logoNegocio) : '' ?>" style="<?= $logoNegocio ? '' : 'display:none' ?>" alt="Logo actual" width="48" height="48">
                             <input type="file" name="logo" id="input-logo" accept="image/png,image/jpeg,image/webp">
                         </div>
                     </div>
-                    <div class="form-field"><label>Nombre del negocio</label><input name="nombre_negocio"></div>
-                    <div class="form-field"><label>Dirección</label><input name="direccion"></div>
-                    <div class="form-field"><label>Horario</label><input name="horario"></div>
-                    <div class="form-field"><label>Teléfono</label><input name="telefono"></div>
-                    <div class="form-field"><label>Tarifa por hora (S/)</label><input name="tarifa_hora" type="number" step="0.01"></div>
-                    <div class="form-field"><label>Minutos de bloqueo (hold)</label><input name="hold_minutes" type="number"></div>
-                    <div class="form-field"><label>% de adelanto requerido</label><input name="adelanto_porcentaje" type="number"></div>
+                    <div class="form-field"><label for="input-nombre-negocio">Nombre del negocio</label><input id="input-nombre-negocio" name="nombre_negocio"></div>
+                    <div class="form-field"><label for="input-direccion">Dirección</label><input id="input-direccion" name="direccion"></div>
+                    <div class="form-field"><label for="input-horario">Horario</label><input id="input-horario" name="horario"></div>
+                    <div class="form-field"><label for="input-telefono">Teléfono</label><input id="input-telefono" name="telefono"></div>
+                    <div class="form-field"><label for="input-tarifa-hora">Tarifa por hora (S/)</label><input id="input-tarifa-hora" name="tarifa_hora" type="number" step="0.01"></div>
+                    <div class="form-field"><label for="input-hold-minutes">Minutos de bloqueo (hold)</label><input id="input-hold-minutes" name="hold_minutes" type="number"></div>
+                    <div class="form-field"><label for="input-adelanto-porcentaje">% de adelanto requerido</label><input id="input-adelanto-porcentaje" name="adelanto_porcentaje" type="number"></div>
                     <button class="btn-primary" type="submit">Guardar cambios</button>
                 </form>
             </div>
@@ -243,3 +243,4 @@ $logoNegocio = Configuracion::get('logo_path', null);
 <script src="<?= $basePath ?>/assets/js/admin/dashboard.js"></script>
 </body>
 </html>
+

@@ -1,8 +1,8 @@
 <?php
-require __DIR__ . '/../src/Autoload.php';
+require_once __DIR__ . '/../src/Autoload.php';
 use App\Auth\AdminAuth;
 
-$config = require __DIR__ . '/../config/config.php';
+$config = require_once __DIR__ . '/../config/config.php';
 $basePath = $config['app_base_path'];
 
 if (AdminAuth::check()) {

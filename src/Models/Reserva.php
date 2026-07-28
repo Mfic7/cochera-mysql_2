@@ -54,7 +54,7 @@ class Reserva
         return $codigo;
     }
 
-    public static function actualizarEstado(int $id, string $estado, ?string $nota = null): void
+    public static function actualizarEstado(int $id, string $estado): void
     {
         $pdo = Database::connection();
         $stmt = $pdo->prepare('UPDATE reservas SET estado = :estado WHERE id = :id');

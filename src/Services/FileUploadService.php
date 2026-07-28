@@ -8,8 +8,13 @@ class FileUploadException extends \RuntimeException
 
 class FileUploadService
 {
-    private const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    private const ALLOWED_MIME_LOGO = ['image/jpeg', 'image/png', 'image/webp'];
+    private const MIME_JPEG = 'image/jpeg';
+    private const MIME_PNG = 'image/png';
+    private const MIME_WEBP = 'image/webp';
+    private const MIME_PDF = 'application/pdf';
+
+    private const ALLOWED_MIME = [self::MIME_JPEG, self::MIME_PNG, self::MIME_WEBP, self::MIME_PDF];
+    private const ALLOWED_MIME_LOGO = [self::MIME_JPEG, self::MIME_PNG, self::MIME_WEBP];
     private const MAX_BYTES = 5 * 1024 * 1024;
 
     /** Valida y mueve un archivo subido a storage/comprobantes/{reservaId}/, devuelve la ruta relativa. */
@@ -54,15 +59,15 @@ class FileUploadService
 
         $permitidos = $mimesPermitidos ?? self::ALLOWED_MIME;
         if (!in_array($mime, $permitidos, true)) {
-            $formatos = in_array('application/pdf', $permitidos, true) ? 'JPG, PNG, WEBP o PDF' : 'JPG, PNG o WEBP';
+            $formatos = in_array(self::MIME_PDF, $permitidos, true) ? 'JPG, PNG, WEBP o PDF' : 'JPG, PNG o WEBP';
             throw new FileUploadException("Formato de archivo no permitido. Usa $formatos.");
         }
 
         $ext = match ($mime) {
-            'image/jpeg' => 'jpg',
-            'image/png' => 'png',
-            'image/webp' => 'webp',
-            'application/pdf' => 'pdf',
+            self::MIME_JPEG => 'jpg',
+            self::MIME_PNG => 'png',
+            self::MIME_WEBP => 'webp',
+            self::MIME_PDF => 'pdf',
         };
 
         $dir = __DIR__ . '/../../storage/' . $subdir;
@@ -87,3 +92,4 @@ class FileUploadService
         return $subdir . '/' . $filename;
     }
 }
+

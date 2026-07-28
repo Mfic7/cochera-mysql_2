@@ -64,7 +64,15 @@ class CancelacionController extends Controller
         $pdo = \App\Database::connection();
         $pdo->beginTransaction();
         try {
-            Cancelacion::crear($reservaId, $motivo, $numeroOperacion ?: null, $comprobantePath);
+            // CORRECCIÓN: Cancelacion::crear() espera (\PDO $pdo, array $datos),
+            // no una lista de parámetros sueltos. La firma anterior no coincidía
+            // con el modelo real y provocaba un TypeError -> Error 500.
+            Cancelacion::crear($pdo, [
+                'reserva_id' => $reservaId,
+                'motivo' => $motivo,
+                'numero_operacion' => $numeroOperacion ?: null,
+                'comprobante_path' => $comprobantePath,
+            ]);
             Reserva::actualizarEstado($reservaId, 'cancelada');
             ReservaEstadoHistorial::registrar($pdo, $reservaId, $reserva['estado'], 'cancelada', 'cliente', null, 'Solicitud de cancelación enviada: ' . $motivo);
             $pdo->commit();
@@ -76,3 +84,4 @@ class CancelacionController extends Controller
         $this->json(['ok' => true, 'message' => 'Solicitud de cancelación enviada.']);
     }
 }
+

@@ -9,7 +9,7 @@ class Config
     public static function all(): array
     {
         if (self::$data === null) {
-            self::$data = require __DIR__ . '/../config/config.php';
+            self::$data = require_once __DIR__ . '/../config/config.php';
         }
         return self::$data;
     }

@@ -53,26 +53,27 @@ class Validator
         }
 
         $valor = trim((string) ($this->data[$field] ?? ''));
-        if ($valor === '') {
-            return $this; // ya cubierto por required()
-        }
-
-        if (mb_strlen($valor) < 3) {
-            $this->errors[$field] = "$label debe tener al menos 3 caracteres";
-            return $this;
-        }
-
-        if (!preg_match('/^[\p{L}\s]+$/u', $valor)) {
-            $this->errors[$field] = "$label solo puede contener letras";
-            return $this;
-        }
-
-        $palabras = array_filter(preg_split('/\s+/', $valor));
-        if (count($palabras) < 2) {
-            $this->errors[$field] = "Ingresa nombre y apellido en $label";
+        $error = $this->validarNombreCompleto($valor, $label);
+        if ($error !== null) {
+            $this->errors[$field] = $error;
         }
 
         return $this;
+    }
+
+    /** Devuelve el mensaje de error del nombre completo, o null si es válido (o vacío, ya cubierto por required()). */
+    private function validarNombreCompleto(string $valor, string $label): ?string
+    {
+        if ($valor === '') {
+            return null; // ya cubierto por required()
+        }
+
+        return match (true) {
+            mb_strlen($valor) < 3 => "$label debe tener al menos 3 caracteres",
+            !preg_match('/^[\p{L}\s]+$/u', $valor) => "$label solo puede contener letras",
+            count(array_filter(preg_split('/\s+/', $valor))) < 2 => "Ingresa nombre y apellido en $label",
+            default => null,
+        };
     }
 
     /**
@@ -108,3 +109,4 @@ class Validator
         return $this->data;
     }
 }
+

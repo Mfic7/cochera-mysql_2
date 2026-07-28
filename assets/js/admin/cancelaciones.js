@@ -28,34 +28,6 @@ const AdminCancelaciones = (() => {
         loadCancelaciones();
     }
 
-    function verComprobante(path) {
-        const url = encodeURI(`${window.APP_BASE}/storage/${path}`);
-        openModal(`
-            <h3>Comprobante de cancelación <button class="modal-close" data-close>×</button></h3>
-            <div class="modal-comprobante">
-                ${path.toLowerCase().endsWith('.pdf')
-                    ? `<a href="${url}" target="_blank">Abrir PDF de comprobante</a>`
-                    : `<img src="${url}" alt="Comprobante de cancelación">`}
-            </div>`);
-    }
-
-    function openModal(html) {
-        const root = document.getElementById('modal-root');
-        if (!root) return;
-        root.innerHTML = `<div class="modal-overlay" data-overlay><div class="modal">${html}</div></div>`;
-        const overlay = root.querySelector('[data-overlay]');
-        if (overlay) {
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
-        }
-        const closeBtn = root.querySelector('[data-close]');
-        if (closeBtn) closeBtn.addEventListener('click', closeModal);
-    }
-
-    function closeModal() {
-        const root = document.getElementById('modal-root');
-        if (root) root.innerHTML = '';
-    }
-
     async function loadCancelaciones() {
         const rows = await AdminApi.cancelaciones();
         render(rows);

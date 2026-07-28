@@ -66,3 +66,4 @@ class ConfigController extends Controller
         $this->json(MetodoPago::activos());
     }
 }
+

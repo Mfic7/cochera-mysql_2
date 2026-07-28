@@ -13,6 +13,11 @@ class ReservaConflictException extends \RuntimeException
 {
 }
 
+/** Se lanza cuando no se pudo generar un código único de reserva tras varios intentos. */
+class ReservaCodigoException extends \RuntimeException
+{
+}
+
 class ReservaService
 {
     /**
@@ -83,7 +88,7 @@ class ReservaService
             $attempts = 0;
             do {
                 if ($attempts++ > 5) {
-                    throw new \RuntimeException('No se pudo generar un código único de reserva. Intenta nuevamente.');
+                    throw new ReservaCodigoException('No se pudo generar un código único de reserva. Intenta nuevamente.');
                 }
                 $codigo = Reserva::generarCodigo($pdo);
                 try {

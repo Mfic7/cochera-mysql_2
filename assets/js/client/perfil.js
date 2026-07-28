@@ -21,15 +21,17 @@ const Perfil = (() => {
 
         el['buscar-celular'].addEventListener('input', () => formatearCelular(el['buscar-celular']));
         el['buscar-celular'].addEventListener('keypress', (e) => {
-            if (!/[0-9]/.test(e.key)) e.preventDefault();
+            if (!/\d/.test(e.key)) e.preventDefault();
         });
     }
 
     function formatearCelular(input) {
         const limpio = input.value.replace(/\D/g, '').slice(0, 9);
-        input.value = limpio.replace(/(\d{3})(\d{3})(\d{0,3})/, (m, a, b, c) =>
-            c ? `${a} ${b} ${c}` : b ? `${a} ${b}` : a
-        );
+        input.value = limpio.replace(/(\d{3})(\d{3})(\d{0,3})/, (m, a, b, c) => {
+            if (c) return `${a} ${b} ${c}`;
+            if (b) return `${a} ${b}`;
+            return a;
+        });
     }
 
     async function buscarReserva() {
@@ -50,7 +52,7 @@ const Perfil = (() => {
             renderReserva();
             startPolling();
         } catch (e) {
-            showError('buscar-banner-error', (e.data && e.data.error) || 'No se pudo encontrar tu reserva.');
+            showError('buscar-banner-error', e.data?.error || 'No se pudo encontrar tu reserva.');
         } finally {
             el['btn-buscar'].disabled = false;
             el['btn-buscar'].textContent = 'Buscar mi reserva';
@@ -161,7 +163,7 @@ const Perfil = (() => {
                 '<div class="panel-message"><strong>Solicitud enviada.</strong><p>Hemos recibido tu solicitud de cancelación y el equipo la revisará.</p></div>';
             stopPolling();
         } catch (e) {
-            showError('cancelacion-banner-error', (e.data && e.data.error) || 'No se pudo enviar la solicitud.');
+            showError('cancelacion-banner-error', e.data?.error || 'No se pudo enviar la solicitud.');
             el['btn-solicitar-cancelacion'].disabled = false;
             el['btn-solicitar-cancelacion'].textContent = 'Enviar solicitud de cancelación';
         }
@@ -175,7 +177,9 @@ const Perfil = (() => {
                 state.reserva = { ...state.reserva, ...reserva };
                 renderReserva();
                 if (['cancelada', 'vencida'].includes(reserva.estado)) stopPolling();
-            } catch (e) { /* reintenta en el próximo tick */ }
+            } catch (e) {
+                console.warn('No se pudo actualizar el estado de la reserva:', e);
+            }
         }, 15000);
     }
 

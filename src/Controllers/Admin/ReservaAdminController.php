@@ -12,6 +12,7 @@ use App\Support\Validator;
 class ReservaAdminController extends Controller
 {
     private const ESTADOS_VALIDOS = ['pendiente_pago', 'en_validacion', 'adelanto_pagado', 'pago_completo', 'cancelada', 'vencida'];
+    private const RESERVA_NO_ENCONTRADA = 'Reserva no encontrada';
 
     public function listar(): void
     {
@@ -29,7 +30,7 @@ class ReservaAdminController extends Controller
         $this->requireAdmin();
         $reserva = Reserva::find((int) $id);
         if (!$reserva) {
-            $this->error('Reserva no encontrada', 404);
+            $this->error(self::RESERVA_NO_ENCONTRADA, 404);
         }
         $reserva['pagos'] = Pago::paraReserva((int) $id);
         $reserva['historial'] = ReservaEstadoHistorial::paraReserva((int) $id);
@@ -50,7 +51,7 @@ class ReservaAdminController extends Controller
         $reservaId = (int) $id;
         $reserva = Reserva::find($reservaId);
         if (!$reserva) {
-            $this->error('Reserva no encontrada', 404);
+            $this->error(self::RESERVA_NO_ENCONTRADA, 404);
         }
 
         $pdo = Database::connection();
@@ -76,7 +77,7 @@ class ReservaAdminController extends Controller
         $reservaId = (int) $id;
         $reserva = Reserva::find($reservaId);
         if (!$reserva) {
-            $this->error('Reserva no encontrada', 404);
+            $this->error(self::RESERVA_NO_ENCONTRADA, 404);
         }
         if ($reserva['estado'] !== 'adelanto_pagado') {
             $this->error('Solo se puede registrar el saldo de reservas con el adelanto ya confirmado.', 409);

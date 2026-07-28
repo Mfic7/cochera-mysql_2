@@ -64,12 +64,16 @@ const AdminDashboard = (() => {
         try {
             const ingresos = await AdminApi.reporteIngresos('dia');
             renderIngresosChart(document.getElementById('chart-ingresos'), ingresos.map((r) => r.etiqueta), ingresos.map((r) => Number(r.total)));
-        } catch (e) { /* sin datos aún */ }
+        } catch (e) {
+            console.warn('Sin datos de ingresos aún:', e);
+        }
 
         try {
             const metodos = await AdminApi.reporteMetodosPago(new Date().toISOString().slice(0, 8) + '01', new Date().toISOString().slice(0, 10));
             renderMetodosChart(document.getElementById('chart-metodos'), document.getElementById('metodos-leyenda'), metodos);
-        } catch (e) { /* sin datos aún */ }
+        } catch (e) {
+            console.warn('Sin datos de métodos de pago aún:', e);
+        }
     }
 
     function renderKpis(k) {
@@ -155,13 +159,33 @@ const AdminDashboard = (() => {
         document.querySelectorAll('[data-cancelar]').forEach((b) => b.addEventListener('click', () => cancelarReserva(b.dataset.cancelar)));
     }
 
-    async function registrarSaldo(id) {
-        if (!confirm('¿Confirmar que el cliente pagó el saldo restante en efectivo/otro método presencial?')) return;
-        try {
-            await AdminApi.pagoSaldo(id, null, 'efectivo');
-            toast('Saldo registrado, reserva completada.');
-            loadReservas();
-        } catch (e) { toast(e.data?.error || 'No se pudo registrar el saldo.'); }
+    function registrarSaldo(id) {
+        openModal(`
+            <h3>Registrar saldo <button class="modal-close" data-close>×</button></h3>
+            <p class="muted">Confirma que el cliente pagó el saldo restante (50%) y selecciona el método con el que canceló.</p>
+            <div class="form-field">
+                <label>Método de pago</label>
+                <select id="modal-metodo-saldo">
+                    <option value="yape">Yape</option>
+                    <option value="plin">Plin</option>
+                    <option value="transferencia">Transferencia</option>
+                </select>
+            </div>
+            <button class="btn-primary" type="button" id="btn-confirmar-saldo">Confirmar pago</button>
+            <button class="btn-secondary" type="button" id="btn-cancelar-saldo">Cancelar</button>
+        `);
+
+        document.getElementById('btn-cancelar-saldo').addEventListener('click', closeModal);
+
+        document.getElementById('btn-confirmar-saldo').addEventListener('click', async () => {
+            const metodo = document.getElementById('modal-metodo-saldo').value;
+            closeModal();
+            try {
+                await AdminApi.pagoSaldo(id, null, metodo);
+                toast('Saldo registrado, reserva completada.');
+                loadReservas();
+            } catch (e) { toast(e.data?.error || 'No se pudo registrar el saldo.'); }
+        });
     }
 
     async function cancelarReserva(id) {
@@ -234,7 +258,10 @@ const AdminDashboard = (() => {
             try {
                 await AdminApi.actualizarEspacio(id, { estado });
                 toast('Espacio actualizado.');
-            } catch (e) { toast('No se pudo actualizar.'); }
+            } catch (e) {
+                console.warn('No se pudo actualizar el espacio:', e);
+                toast('No se pudo actualizar.');
+            }
         }));
     }
 
@@ -269,12 +296,24 @@ const AdminDashboard = (() => {
                     await AdminApi.actualizarMetodoPago(tipo, Object.fromEntries(new FormData(form).entries()));
                 }
                 toast('Método de pago actualizado.');
-            } catch (e) { toast('No se pudo actualizar.'); }
+            } catch (e) {
+                console.warn('No se pudo actualizar el método de pago:', e);
+                toast('No se pudo actualizar.');
+            }
         }));
     }
 
     // ---------- Cancelaciones ----------
     const CANCELACION_LABEL = { pendiente: 'Pendiente', aprobada: 'Aprobada', fuera_plazo: 'Fuera de plazo', rechazada: 'Rechazada' };
+
+    function celdaAccionCancelacion(c) {
+        if (c.estado === 'pendiente') {
+            return `
+                <button class="btn-sm approve" data-aprobar-cancelacion="${c.id}">Aceptar</button>
+                <button class="btn-sm reject" data-rechazar-cancelacion="${c.id}">Rechazar</button>`;
+        }
+        return c.nota_admin ? esc(c.nota_admin) : '—';
+    }
 
     async function loadCancelaciones() {
         const estado = document.getElementById('filtro-estado-cancelaciones').value;
@@ -291,11 +330,7 @@ const AdminDashboard = (() => {
                 <td><span class="status-badge cancelacion-${c.estado}">${CANCELACION_LABEL[c.estado] || c.estado}</span></td>
                 <td>${fecha(c.created_at)}</td>
                 <td>${c.comprobante_path ? `<button class="btn-sm" data-ver-comprobante-cancelacion="${c.id}">Ver</button>` : '—'}</td>
-                <td>
-                    ${c.estado === 'pendiente' ? `
-                        <button class="btn-sm approve" data-aprobar-cancelacion="${c.id}">Aceptar</button>
-                        <button class="btn-sm reject" data-rechazar-cancelacion="${c.id}">Rechazar</button>` : (c.nota_admin ? esc(c.nota_admin) : '—')}
-                </td>
+                <td>${celdaAccionCancelacion(c)}</td>
             </tr>`).join('');
 
         document.querySelectorAll('[data-ver-comprobante-cancelacion]').forEach((b) => b.addEventListener('click', () => {
@@ -375,7 +410,11 @@ const AdminDashboard = (() => {
                     headers: { 'X-CSRF-Token': sessionStorage.getItem('csrf_token') || '' },
                 });
                 resp = await r.json();
-                if (!r.ok) throw { data: resp };
+                if (!r.ok) {
+                    const err = new Error(resp?.error || 'No se pudo guardar.');
+                    err.data = resp;
+                    throw err;
+                }
             } else {
                 const data = Object.fromEntries(new FormData(form).entries());
                 delete data.logo;
@@ -416,7 +455,10 @@ const AdminDashboard = (() => {
         try {
             const me = await AdminApi.me();
             if (me) AdminApi.setCsrfToken(me.csrf_token);
-        } catch (e) { return; }
+        } catch (e) {
+            console.warn('No se pudo verificar la sesión de administrador:', e);
+            return;
+        }
 
         initNav();
         document.getElementById('btn-refrescar-dashboard').addEventListener('click', loadDashboard);

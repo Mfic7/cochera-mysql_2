@@ -2,12 +2,35 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../src/Autoload.php';
+require_once __DIR__ . '/../src/Autoload.php';
 
 use App\Router;
 use App\Support\Response;
 
-header('Access-Control-Allow-Origin: *');
+// CORS restringido: solo se permiten los orígenes conocidos de esta app (no '*').
+// Ajusta ALLOWED_ORIGINS si sirves el frontend desde otro dominio (ej. otro túnel de ngrok).
+const ALLOWED_ORIGINS = [
+    'http://localhost',
+    'http://127.0.0.1',
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$originPermitido = false;
+foreach (ALLOWED_ORIGINS as $permitido) {
+    if (str_starts_with($origin, $permitido)) {
+        $originPermitido = true;
+        break;
+    }
+}
+// También se permite cualquier subdominio *.ngrok-free.dev o *.ngrok.io (túneles de desarrollo).
+if (!$originPermitido && preg_match('#^https://[a-z0-9-]+\.ngrok(-free)?\.(dev|io|app)$#i', $origin)) {
+    $originPermitido = true;
+}
+
+if ($originPermitido) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Vary: Origin');
+}
 header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
 header('Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS');
 
@@ -22,7 +45,7 @@ $router->get('ping', function () {
     Response::json(['ok' => true, 'time' => date('c')]);
 });
 
-require __DIR__ . '/routes.php';
+require_once __DIR__ . '/routes.php';
 
 $path = $_SERVER['PATH_INFO'] ?? null;
 if ($path === null) {
@@ -47,3 +70,4 @@ try {
     error_log($e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
     Response::error('Error interno del servidor', 500);
 }
+

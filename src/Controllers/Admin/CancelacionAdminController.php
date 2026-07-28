@@ -60,34 +60,14 @@ class CancelacionAdminController extends Controller
         $input = $this->input();
         $accion = $input['accion'] ?? null;
 
-        $cancelacion = Cancelacion::find((int) $id);
-        if (!$cancelacion) {
-            $this->error('Solicitud no encontrada', 404);
+        $datos = $this->cargarSolicitudValida($id);
+        if ($datos === null) {
             return;
         }
-        if ($cancelacion['estado'] !== 'pendiente') {
-            $this->error('Esta solicitud ya fue revisada.', 409);
-            return;
-        }
-
-        $reserva = Reserva::find((int) $cancelacion['reserva_id']);
-        if (!$reserva) {
-            $this->error('Reserva no encontrada', 404);
-            return;
-        }
-
-        $pdo = Database::connection();
+        [, $reserva] = $datos;
 
         if ($accion === 'rechazar') {
-            $pdo->beginTransaction();
-            try {
-                Cancelacion::marcar($pdo, (int) $id, 'rechazada', $admin['id'], $input['nota'] ?? null);
-                $pdo->commit();
-            } catch (\Throwable $e) {
-                $pdo->rollBack();
-                throw $e;
-            }
-            $this->json(['ok' => true, 'estado' => 'rechazada']);
+            $this->rechazarSolicitud((int) $id, $admin, $input['nota'] ?? null);
             return;
         }
 
@@ -96,34 +76,86 @@ class CancelacionAdminController extends Controller
             return;
         }
 
+        $this->aprobarSolicitud((int) $id, $reserva, $admin, $input['nota'] ?? null);
+    }
+
+    /** Valida que la solicitud exista, esté pendiente, y que su reserva exista. Devuelve [cancelacion, reserva] o null. */
+    private function cargarSolicitudValida(string $id): ?array
+    {
+        $cancelacion = Cancelacion::find((int) $id);
+        if (!$cancelacion || $cancelacion['estado'] !== 'pendiente') {
+            $this->error(
+                $cancelacion ? 'Esta solicitud ya fue revisada.' : 'Solicitud no encontrada',
+                $cancelacion ? 409 : 404
+            );
+            return null;
+        }
+
+        $reserva = Reserva::find((int) $cancelacion['reserva_id']);
+        if (!$reserva) {
+            $this->error('Reserva no encontrada', 404);
+            return null;
+        }
+
+        return [$cancelacion, $reserva];
+    }
+
+    private function rechazarSolicitud(int $id, array $admin, ?string $nota): void
+    {
+        $pdo = Database::connection();
+        $pdo->beginTransaction();
+        try {
+            Cancelacion::marcar($pdo, $id, 'rechazada', $admin['id'], $nota);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+        $this->json(['ok' => true, 'estado' => 'rechazada']);
+    }
+
+    private function aprobarSolicitud(int $id, array $reserva, array $admin, ?string $nota): void
+    {
         $inicioTs = strtotime($reserva['fecha_hora_inicio']);
         $minutosRestantes = ($inicioTs - time()) / 60;
 
         if ($minutosRestantes < self::LIMITE_MINUTOS) {
-            // Fuera de plazo: NO se cancela la reserva ni se devuelve el dinero.
-            $pdo->beginTransaction();
-            try {
-                Cancelacion::marcar(
-                    $pdo,
-                    (int) $id,
-                    'fuera_plazo',
-                    $admin['id'],
-                    'Fuera del plazo de 20 minutos antes de la hora de ingreso. No procede devolución.'
-                );
-                $pdo->commit();
-            } catch (\Throwable $e) {
-                $pdo->rollBack();
-                throw $e;
-            }
-            $this->json([
-                'ok' => false,
-                'estado' => 'fuera_plazo',
-                'mensaje' => 'Esta solicitud está fuera del plazo de cancelación (20 minutos antes de la hora de ingreso). No corresponde devolución del dinero.',
-            ]);
+            $this->marcarFueraDePlazo($id, $admin);
             return;
         }
 
-        // Dentro del plazo: cancela la reserva y marca la solicitud como aprobada (a devolver el adelanto).
+        $this->aprobarDentroDePlazo($id, $reserva, $admin, $nota);
+    }
+
+    /** Fuera de plazo: NO se cancela la reserva ni se devuelve el dinero. */
+    private function marcarFueraDePlazo(int $id, array $admin): void
+    {
+        $pdo = Database::connection();
+        $pdo->beginTransaction();
+        try {
+            Cancelacion::marcar(
+                $pdo,
+                $id,
+                'fuera_plazo',
+                $admin['id'],
+                'Fuera del plazo de 20 minutos antes de la hora de ingreso. No procede devolución.'
+            );
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+        $this->json([
+            'ok' => false,
+            'estado' => 'fuera_plazo',
+            'mensaje' => 'Esta solicitud está fuera del plazo de cancelación (20 minutos antes de la hora de ingreso). No corresponde devolución del dinero.',
+        ]);
+    }
+
+    /** Dentro del plazo: cancela la reserva y marca la solicitud como aprobada (a devolver el adelanto). */
+    private function aprobarDentroDePlazo(int $id, array $reserva, array $admin, ?string $nota): void
+    {
+        $pdo = Database::connection();
         $pdo->beginTransaction();
         try {
             Reserva::actualizarEstado((int) $reserva['id'], 'cancelada');
@@ -136,7 +168,7 @@ class CancelacionAdminController extends Controller
                 $admin['id'],
                 'Cancelación aprobada dentro del plazo. Adelanto de S/ ' . $reserva['monto_adelanto'] . ' pendiente de devolución.'
             );
-            Cancelacion::marcar($pdo, (int) $id, 'aprobada', $admin['id'], $input['nota'] ?? null);
+            Cancelacion::marcar($pdo, $id, 'aprobada', $admin['id'], $nota);
             $pdo->commit();
         } catch (\Throwable $e) {
             $pdo->rollBack();
@@ -150,3 +182,4 @@ class CancelacionAdminController extends Controller
         ]);
     }
 }
+

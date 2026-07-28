@@ -1,5 +1,5 @@
 <?php
-$config = require __DIR__ . '/config/config.php';
+$config = require_once __DIR__ . '/config/config.php';
 $basePath = $config['app_base_path'];
 ?>
 <!DOCTYPE html>
@@ -28,119 +28,148 @@ $basePath = $config['app_base_path'];
     </div>
 </header>
 
-<main class="layout">
-    <section class="panel">
-        <h2>1. Selecciona tu fecha y hora</h2>
-        <div class="field-row">
-            <label>Fecha<input type="date" id="fecha"></label>
-            <label>Hora de ingreso<input type="time" id="hora"></label>
-        </div>
-        <div class="field-row">
-            <label>Horas estimadas
-                <select id="horas">
-                    <option value="1">1 hora</option>
-                    <option value="2" selected>2 horas</option>
-                    <option value="3">3 horas</option>
-                    <option value="4">4 horas</option>
-                    <option value="6">6 horas</option>
-                    <option value="8">8 horas</option>
-                    <option value="12">12 horas</option>
-                    <option value="24">24 horas</option>
-                </select>
-            </label>
-        </div>
+<div class="app-shell">
+    <aside class="sidebar">
+        <h3>Reservar</h3>
+        <button class="sidebar-item active" type="button" data-tab="tab-fecha-espacio">1-2. Fecha y espacio</button>
+        <button class="sidebar-item" type="button" data-tab="tab-datos-resumen">3-4. Tus datos y resumen</button>
+        <button class="sidebar-item" type="button" data-tab="tab-buscar">¿Ya tienes reserva?</button>
+    </aside>
 
-        <h2>2. Elige tu espacio</h2>
-        <div class="legend">
-            <span><i class="dot disponible"></i>Disponible</span>
-            <span><i class="dot reservado"></i>Reservado</span>
-            <span><i class="dot ocupado"></i>Ocupado</span>
-            <span><i class="dot seleccionado"></i>Seleccionado</span>
-        </div>
-        <div class="parking-lot" id="parking-grid">
-            <p class="loading">Cargando espacios…</p>
-        </div>
+    <main class="content-area">
 
-        <div class="stat-cards">
-            <div class="stat-card"><span id="stat-disponibles">—</span><label>Espacios disponibles</label></div>
-            <div class="stat-card"><span id="stat-ocupados">—</span><label>Espacios ocupados</label></div>
-            <div class="stat-card"><span id="stat-tarifa">—</span><label>Tarifa por hora</label></div>
-        </div>
-    </section>
+        <!-- ===== TAB 1: pasos 1 y 2 ===== -->
+        <div class="tab-content active" id="tab-fecha-espacio">
+            <section class="panel">
+                <h2>1. Selecciona tu fecha y hora</h2>
+                <div class="field-row">
+                    <label>Fecha<input type="date" id="fecha"></label>
+                    <label>Hora de ingreso<input type="time" id="hora"></label>
+                </div>
+                <div class="field-row">
+                    <label>Horas estimadas
+                        <select id="horas">
+                            <option value="1">1 hora</option>
+                            <option value="2" selected>2 horas</option>
+                            <option value="3">3 horas</option>
+                            <option value="4">4 horas</option>
+                            <option value="6">6 horas</option>
+                            <option value="8">8 horas</option>
+                            <option value="12">12 horas</option>
+                            <option value="24">24 horas</option>
+                        </select>
+                    </label>
+                </div>
 
-    <section class="panel">
-        <h2>3. Tus datos</h2>
-        <label>Nombre completo<input type="text" id="cliente-nombre" placeholder="Juan Pérez"></label>
-        <label>Número de celular<input type="tel" id="cliente-celular" placeholder="987 654 321"></label>
+                <h2>2. Elige tu espacio</h2>
+                <div class="legend">
+                    <span><i class="dot disponible"></i>Disponible</span>
+                    <span><i class="dot reservado"></i>Reservado</span>
+                    <span><i class="dot ocupado"></i>Ocupado</span>
+                    <span><i class="dot seleccionado"></i>Seleccionado</span>
+                </div>
+                <div class="parking-lot" id="parking-grid">
+                    <p class="loading">Cargando espacios…</p>
+                </div>
 
-        <h2>4. Resumen de tu reserva</h2>
-        <div class="resumen">
-            <div class="resumen-row"><span>Espacio seleccionado</span><strong id="r-espacio">—</strong></div>
-            <div class="resumen-row"><span>Fecha</span><strong id="r-fecha">—</strong></div>
-            <div class="resumen-row"><span>Hora de ingreso</span><strong id="r-hora">—</strong></div>
-            <div class="resumen-row"><span>Tarifa por hora</span><strong id="r-tarifa">—</strong></div>
-            <div class="resumen-row total"><span>Total a pagar</span><strong id="r-total">—</strong></div>
+                <div class="stat-cards">
+                    <div class="stat-card"><span id="stat-disponibles">—</span><span class="stat-label">Espacios disponibles</span></div>
+                    <div class="stat-card"><span id="stat-ocupados">—</span><span class="stat-label">Espacios ocupados</span></div>
+                    <div class="stat-card"><span id="stat-tarifa">—</span><span class="stat-label">Tarifa por hora</span></div>
+                </div>
+            </section>
         </div>
 
-        <div class="adelanto-box">
-            <span>Adelanto requerido (50%)</span>
-            <strong id="r-adelanto">S/ 0.00</strong>
-            <p>✅ El 50% restante lo pagas al llegar</p>
+        <!-- ===== TAB 2: pasos 3 y 4 ===== -->
+        <div class="tab-content" id="tab-datos-resumen">
+            <section class="panel">
+                <h2>3. Tus datos</h2>
+                <label>Nombre completo<input type="text" id="cliente-nombre" placeholder="Juan Pérez"></label>
+                <label>Número de celular<input type="tel" id="cliente-celular" placeholder="987 654 321"></label>
+
+                <h2>4. Resumen de tu reserva</h2>
+                <div class="resumen">
+                    <div class="resumen-row"><span>Espacio seleccionado</span><strong id="r-espacio">—</strong></div>
+                    <div class="resumen-row"><span>Fecha</span><strong id="r-fecha">—</strong></div>
+                    <div class="resumen-row"><span>Hora de ingreso</span><strong id="r-hora">—</strong></div>
+                    <div class="resumen-row"><span>Tarifa por hora</span><strong id="r-tarifa">—</strong></div>
+                    <div class="resumen-row total"><span>Total a pagar</span><strong id="r-total">—</strong></div>
+                </div>
+
+                <div class="adelanto-box">
+                    <span>Adelanto requerido (50%)</span>
+                    <strong id="r-adelanto">S/ 0.00</strong>
+                    <p>✅ El 50% restante lo pagas al llegar</p>
+                </div>
+
+                <div class="hold-note">
+                    <span class="icon">🕒</span>
+                    <p>El espacio quedará bloqueado por <span id="hold-minutes">5</span> minutos para que puedas completar tu reserva.</p>
+                </div>
+
+                <button class="btn-primary" id="btn-reservar" type="button">Reservar espacio</button>
+                <p class="hold-timer" id="hold-timer" hidden></p>
+            </section>
         </div>
 
-        <div class="hold-note">
-            <span class="icon">🕒</span>
-            <p>El espacio quedará bloqueado por <span id="hold-minutes">5</span> minutos para que puedas completar tu reserva.</p>
+        <!-- ===== TAB 3: buscar / cancelar reserva ===== -->
+        <div class="tab-content" id="tab-buscar">
+            <div class="search-grid">
+                <section class="panel" id="panel-buscar-reserva">
+                    <h2>¿Ya tienes una reserva?</h2>
+                    <p class="muted">Ingresa tu celular y el número de espacio que reservaste para verla o cancelarla.</p>
+
+                    <label>Número de celular<input type="tel" id="buscar-celular" placeholder="987 654 321"></label>
+                    <label>Número de espacio<input type="text" id="buscar-espacio" placeholder="Ej. 04"></label>
+
+                    <p class="banner-error" id="buscar-banner-error" hidden></p>
+
+                    <button class="btn-primary" id="btn-buscar-reserva" type="button">Buscar reserva</button>
+                </section>
+
+                <section class="panel" id="panel-buscar-resultado">
+                    <h2>Datos de tu reserva</h2>
+
+                    <div class="resumen" id="buscar-resultado" hidden>
+                        <div class="resumen-row"><span>Código</span><strong id="buscar-r-codigo">—</strong></div>
+                        <div class="resumen-row"><span>Espacio</span><strong id="buscar-r-espacio">—</strong></div>
+                        <div class="resumen-row"><span>Fecha y hora</span><strong id="buscar-r-fecha">—</strong></div>
+                        <div class="resumen-row"><span>Estado</span><strong id="buscar-r-estado">—</strong></div>
+                        <button class="btn-secondary" id="btn-buscar-cancelar" type="button" hidden style="margin-top:12px;">Solicitar cancelación</button>
+                    </div>
+
+                    <p class="muted" id="buscar-resultado-vacio">Aquí aparecerán los datos de tu reserva una vez que la encuentres.</p>
+                </section>
+            </div>
         </div>
 
-        <button class="btn-primary" id="btn-reservar" type="button">Reservar espacio</button>
-        <p class="hold-timer" id="hold-timer" hidden></p>
-    </section>
+        <!-- ===== Paneles dinámicos (los muestra/oculta el JS existente, no dependen de la pestaña activa) ===== -->
+        <section class="panel" id="panel-pago" hidden>
+            <h2>5. Realiza el pago del 50%</h2>
+            <p class="muted">Elige tu método de pago</p>
+            <div class="tabs" id="metodo-tabs"></div>
+            <div id="metodo-detalle"></div>
 
-    <section class="panel" id="panel-buscar-reserva">
-        <h2>¿Ya tienes una reserva?</h2>
-        <p class="muted">Ingresa tu celular y el número de espacio que reservaste para verla o cancelarla.</p>
+            <label>Número de operación / Código de transacción<input type="text" id="numero-operacion"></label>
+            <label>Sube tu comprobante de pago<input type="file" id="comprobante" accept="image/*,application/pdf"></label>
 
-        <label>Número de celular<input type="tel" id="buscar-celular" placeholder="987 654 321"></label>
-        <label>Número de espacio<input type="text" id="buscar-espacio" placeholder="Ej. 04"></label>
+            <button class="btn-primary" id="btn-enviar-comprobante" type="button">🔒 Enviar comprobante y reservar</button>
+            <button class="btn-secondary" id="btn-abrir-cancelacion" type="button" hidden>Solicitar cancelación</button>
+        </section>
 
-        <p class="banner-error" id="buscar-banner-error" hidden></p>
+        <section class="panel" id="panel-cancelacion" hidden>
+            <h2>6. Solicitar cancelación</h2>
+            <p class="muted">Envía tu solicitud cuando necesites cancelar la reserva.</p>
+            <p>Reserva: <strong id="cancelacion-codigo">—</strong></p>
+            <label>Motivo de la cancelación<textarea id="cancelacion-motivo" rows="3" placeholder="Describe brevemente por qué deseas cancelar"></textarea></label>
+            <label>Número de operación / código de transacción<input type="text" id="cancelacion-numero-operacion"></label>
+            <label>Comprobante de pago<input type="file" id="cancelacion-comprobante" accept="image/*,application/pdf"></label>
+            <p class="banner-error" id="cancelacion-banner-error" hidden></p>
+            <button class="btn-primary" id="btn-solicitar-cancelacion" type="button">Enviar solicitud de cancelación</button>
+        </section>
 
-        <button class="btn-primary" id="btn-buscar-reserva" type="button">Buscar reserva</button>
-
-        <div class="resumen" id="buscar-resultado" hidden style="margin-top:16px;">
-            <div class="resumen-row"><span>Código</span><strong id="buscar-r-codigo">—</strong></div>
-            <div class="resumen-row"><span>Espacio</span><strong id="buscar-r-espacio">—</strong></div>
-            <div class="resumen-row"><span>Fecha y hora</span><strong id="buscar-r-fecha">—</strong></div>
-            <div class="resumen-row"><span>Estado</span><strong id="buscar-r-estado">—</strong></div>
-            <button class="btn-secondary" id="btn-buscar-cancelar" type="button" hidden style="margin-top:12px;">Solicitar cancelación</button>
-        </div>
-    </section>
-
-    <section class="panel" id="panel-pago" hidden>
-        <h2>5. Realiza el pago del 50%</h2>
-        <p class="muted">Elige tu método de pago</p>
-        <div class="tabs" id="metodo-tabs"></div>
-        <div id="metodo-detalle"></div>
-
-        <label>Número de operación / Código de transacción<input type="text" id="numero-operacion"></label>
-        <label>Sube tu comprobante de pago<input type="file" id="comprobante" accept="image/*,application/pdf"></label>
-
-        <button class="btn-primary" id="btn-enviar-comprobante" type="button">🔒 Enviar comprobante y reservar</button>
-        <button class="btn-secondary" id="btn-abrir-cancelacion" type="button" hidden>Solicitar cancelación</button>
-    </section>
-
-    <section class="panel" id="panel-cancelacion" hidden>
-        <h2>6. Solicitar cancelación</h2>
-        <p class="muted">Envía tu solicitud cuando necesites cancelar la reserva.</p>
-        <p>Reserva: <strong id="cancelacion-codigo">—</strong></p>
-        <label>Motivo de la cancelación<textarea id="cancelacion-motivo" rows="3" placeholder="Describe brevemente por qué deseas cancelar"></textarea></label>
-        <label>Número de operación / código de transacción<input type="text" id="cancelacion-numero-operacion"></label>
-        <label>Comprobante de pago<input type="file" id="cancelacion-comprobante" accept="image/*,application/pdf"></label>
-        <p class="banner-error" id="cancelacion-banner-error" hidden></p>
-        <button class="btn-primary" id="btn-solicitar-cancelacion" type="button">Enviar solicitud de cancelación</button>
-    </section>
-</main>
+    </main>
+</div>
 
 <section class="bottom-grid">
     <div class="panel">
@@ -177,5 +206,36 @@ $basePath = $config['app_base_path'];
 <script src="<?= $basePath ?>/assets/js/client/holdTimer.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/reservationForm.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/main.js"></script>
+
+<!-- ===== Navegación del sidebar: SOLO cambia qué pestaña se ve, no toca datos ni JS existente ===== -->
+<script>
+(function () {
+    var sidebarItems = document.querySelectorAll('.sidebar-item');
+    var tabContents = document.querySelectorAll('.tab-content');
+
+    function activarTab(tabId) {
+        tabContents.forEach(function (tab) { tab.classList.remove('active'); });
+        sidebarItems.forEach(function (item) { item.classList.remove('active'); });
+
+        var tab = document.getElementById(tabId);
+        if (tab) tab.classList.add('active');
+
+        var item = document.querySelector('.sidebar-item[data-tab="' + tabId + '"]');
+        if (item) item.classList.add('active');
+    }
+
+    sidebarItems.forEach(function (item) {
+        item.addEventListener('click', function () {
+            activarTab(item.getAttribute('data-tab'));
+        });
+    });
+
+    // Si alguien entra con #panel-buscar-reserva en la URL, abre esa pestaña automáticamente
+    if (window.location.hash === '#panel-buscar-reserva') {
+        activarTab('tab-buscar');
+    }
+})();
+</script>
 </body>
 </html>
+
