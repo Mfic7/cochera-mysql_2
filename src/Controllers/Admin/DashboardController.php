@@ -126,4 +126,143 @@ class DashboardController extends Controller
         $hasta = $_GET['hasta'] ?? date('Y-m-d');
         $this->json(Pago::ingresosPorMetodo($desde, $hasta));
     }
+
+    /**
+     * Resumen completo de un período (día/semana/mes/año) con los indicadores
+     * pedidos en el requerimiento: total de reservas, ocupación, ingresos,
+     * adelantos, pagos pendientes/completados, canceladas y métodos de pago.
+     */
+    public function reporteResumen(): void
+    {
+        $this->requireAdmin();
+        $periodo = $_GET['periodo'] ?? 'dia';
+        [$desde, $hasta] = self::rangoPeriodo($periodo);
+        $pdo = Database::connection();
+
+        $totalReservas = self::contarReservas($pdo, $desde, $hasta);
+        $canceladas = self::contarReservas($pdo, $desde, $hasta, 'cancelada');
+
+        $ahora = date(self::FORMATO_FECHA_HORA);
+        $disponibilidad = EspacioAvailabilityService::disponibilidad($ahora, $ahora);
+
+        $stmtIngresos = $pdo->prepare(
+            "SELECT COALESCE(SUM(monto),0) AS s FROM pagos
+             WHERE estado='aprobado' AND DATE(revisado_en) BETWEEN :desde AND :hasta"
+        );
+        $stmtIngresos->execute(['desde' => $desde, 'hasta' => $hasta]);
+        $ingresos = (float) $stmtIngresos->fetch()['s'];
+
+        $stmtAdelantos = $pdo->prepare(
+            "SELECT COALESCE(SUM(monto),0) AS s FROM pagos
+             WHERE tipo='adelanto' AND estado='aprobado' AND DATE(revisado_en) BETWEEN :desde AND :hasta"
+        );
+        $stmtAdelantos->execute(['desde' => $desde, 'hasta' => $hasta]);
+        $adelantos = (float) $stmtAdelantos->fetch()['s'];
+
+        $stmtPendientes = $pdo->prepare(
+            "SELECT COUNT(*) AS n FROM pagos
+             WHERE estado='en_validacion' AND DATE(created_at) BETWEEN :desde AND :hasta"
+        );
+        $stmtPendientes->execute(['desde' => $desde, 'hasta' => $hasta]);
+        $pagosPendientes = (int) $stmtPendientes->fetch()['n'];
+
+        $stmtCompletados = $pdo->prepare(
+            "SELECT COUNT(*) AS n FROM pagos
+             WHERE estado='aprobado' AND DATE(created_at) BETWEEN :desde AND :hasta"
+        );
+        $stmtCompletados->execute(['desde' => $desde, 'hasta' => $hasta]);
+        $pagosCompletados = (int) $stmtCompletados->fetch()['n'];
+
+        $metodos = Pago::ingresosPorMetodo($desde, $hasta);
+
+        $this->json([
+            'periodo' => $periodo,
+            'desde' => $desde,
+            'hasta' => $hasta,
+            'total_reservas' => $totalReservas,
+            'reservas_canceladas' => $canceladas,
+            'espacios_ocupados' => $disponibilidad['ocupados'] + $disponibilidad['reservados'],
+            'espacios_disponibles' => $disponibilidad['disponibles'],
+            'total_espacios' => count($disponibilidad['espacios']),
+            'ingresos' => $ingresos,
+            'adelantos' => $adelantos,
+            'pagos_pendientes' => $pagosPendientes,
+            'pagos_completados' => $pagosCompletados,
+            'metodos_pago' => $metodos,
+        ]);
+    }
+
+    /**
+     * Calcula el rango de fechas (desde/hasta, formato Y-m-d) para cada período.
+     * semana = lunes a domingo de la semana actual; mes = mes calendario actual;
+     * año = año calendario actual.
+     */
+    private static function rangoPeriodo(string $periodo): array
+    {
+        $hoy = new \DateTime();
+        switch ($periodo) {
+            case 'semana':
+                $desde = (clone $hoy)->modify('monday this week');
+                $hasta = (clone $hoy)->modify('sunday this week');
+                break;
+            case 'mes':
+                $desde = new \DateTime($hoy->format('Y-m-01'));
+                $hasta = new \DateTime($hoy->format('Y-m-t'));
+                break;
+            case 'anio':
+                $desde = new \DateTime($hoy->format('Y-01-01'));
+                $hasta = new \DateTime($hoy->format('Y-12-31'));
+                break;
+            default: // 'dia'
+                $desde = clone $hoy;
+                $hasta = clone $hoy;
+        }
+        return [$desde->format('Y-m-d'), $hasta->format('Y-m-d')];
+    }
+
+    private static function contarReservas(\PDO $pdo, string $desde, string $hasta, ?string $estado = null): int
+    {
+        $sql = "SELECT COUNT(*) AS n FROM reservas WHERE DATE(created_at) BETWEEN :desde AND :hasta";
+        $params = ['desde' => $desde, 'hasta' => $hasta];
+        if ($estado) {
+            $sql .= " AND estado = :estado";
+            $params['estado'] = $estado;
+        }
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetch()['n'];
+    }
+
+    /**
+     * Reservas confirmadas cuya hora de llegada está cerca (para avisar al admin
+     * "cliente por llegar") o ya pasó hace poco (para avisar "cliente llegó").
+     * El frontend decide con qué texto mostrar cada una según el campo 'tipo'.
+     */
+    public function alertasLlegada(): void
+    {
+        $this->requireAdmin();
+        $minutosAnticipacion = 10;
+        $pdo = Database::connection();
+
+        $stmt = $pdo->prepare(
+            "SELECT r.id, r.codigo, r.cliente_nombre, e.codigo AS espacio_codigo, r.fecha_hora_inicio, r.estado
+             FROM reservas r
+             JOIN espacios e ON e.id = r.espacio_id
+             WHERE r.estado IN ('adelanto_pagado', 'pago_completo')
+               AND r.fecha_hora_inicio BETWEEN (NOW() - INTERVAL 5 MINUTE) AND (NOW() + INTERVAL :minutos MINUTE)
+             ORDER BY r.fecha_hora_inicio ASC"
+        );
+        $stmt->bindValue(':minutos', $minutosAnticipacion, \PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $ahora = new \DateTime();
+        $resultado = array_map(function ($r) use ($ahora) {
+            $llegada = new \DateTime($r['fecha_hora_inicio']);
+            $r['tipo'] = $llegada <= $ahora ? 'llego' : 'por_llegar';
+            return $r;
+        }, $rows);
+
+        $this->json($resultado);
+    }
 }

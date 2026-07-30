@@ -2,5 +2,5 @@ projectKey=cochera-mysql_2
 serverUrl=http://localhost:9000
 serverVersion=26.7.0.124771
 dashboardUrl=http://localhost:9000/dashboard?id=cochera-mysql_2
-ceTaskId=921579e8-4d23-45e2-9efd-7dd1958f5e0e
-ceTaskUrl=http://localhost:9000/api/ce/task?id=921579e8-4d23-45e2-9efd-7dd1958f5e0e
+ceTaskId=1e953735-4609-4396-a118-87c0a410daa0
+ceTaskUrl=http://localhost:9000/api/ce/task?id=1e953735-4609-4396-a118-87c0a410daa0

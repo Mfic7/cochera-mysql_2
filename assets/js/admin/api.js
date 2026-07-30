@@ -70,5 +70,7 @@ const AdminApi = (() => {
 
         reporteIngresos: (agrupacion) => request(`/admin/reportes/ingresos?agrupacion=${agrupacion}`),
         reporteMetodosPago: (desde, hasta) => request(`/admin/reportes/metodos-pago?desde=${desde}&hasta=${hasta}`),
+        reporteResumen: (periodo) => request(`/admin/reportes/resumen?periodo=${periodo}`),
+        alertasLlegada: () => request('/admin/alertas-llegada'),
     };
 })();

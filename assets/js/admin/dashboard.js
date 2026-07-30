@@ -8,6 +8,8 @@ const AdminDashboard = (() => {
         vencida: 'Vencida',
     };
 
+    let reportesPeriodoActual = 'dia';
+
     function money(n) { return 'S/ ' + Number(n).toFixed(2); }
     function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
     function fecha(s) { return s ? new Date(s.replace(' ', 'T')).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
@@ -42,6 +44,7 @@ const AdminDashboard = (() => {
             'metodos-pago': loadMetodosPago,
             cancelaciones: loadCancelaciones,
             configuracion: loadConfiguracion,
+            reportes: () => loadReportes(reportesPeriodoActual),
         };
         if (loaders[view]) loaders[view]();
     }
@@ -234,6 +237,178 @@ const AdminDashboard = (() => {
             toast(accion === 'aprobar' ? 'Pago aprobado.' : 'Pago rechazado.');
             loadPagos();
         } catch (e) { toast(e.data?.error || 'No se pudo procesar.'); }
+    }
+
+    // ---------- Reportes ----------
+    async function loadReportes(periodo = 'dia') {
+        reportesPeriodoActual = periodo;
+
+        try {
+            const resumen = await AdminApi.reporteResumen(periodo);
+            renderResumenReportes(resumen);
+            renderMetodosChart(
+                document.getElementById('chart-reportes-metodos'),
+                document.getElementById('reportes-metodos-leyenda'),
+                resumen.metodos_pago || []
+            );
+            window._reportesResumen = resumen;
+        } catch (e) {
+            console.warn('No se pudo cargar el resumen de reportes:', e);
+        }
+
+        try {
+            const ingresos = await AdminApi.reporteIngresos(periodo);
+            renderIngresosChart(
+                document.getElementById('chart-reportes-ingresos'),
+                ingresos.map((r) => r.etiqueta),
+                ingresos.map((r) => Number(r.total))
+            );
+            window._reportesIngresosRows = ingresos;
+        } catch (e) {
+            console.warn('Sin datos de ingresos para reportes:', e);
+        }
+
+        await loadReportesReservas();
+    }
+
+    function renderResumenReportes(k) {
+        const cards = [
+            { icon: '🚗', label: 'Total de reservas', value: k.total_reservas },
+            { icon: '❌', label: 'Reservas canceladas', value: k.reservas_canceladas },
+            { icon: '🅿️', label: 'Espacios ocupados', value: k.espacios_ocupados },
+            { icon: '🟢', label: 'Espacios disponibles', value: k.espacios_disponibles },
+            { icon: '💰', label: 'Ingresos generados', value: money(k.ingresos) },
+            { icon: '🧾', label: 'Adelantos recibidos', value: money(k.adelantos) },
+            { icon: '⏳', label: 'Pagos pendientes', value: k.pagos_pendientes },
+            { icon: '✅', label: 'Pagos completados', value: k.pagos_completados },
+        ];
+        document.getElementById('reportes-kpi-grid').innerHTML = cards.map((c) => `
+            <div class="kpi-card">
+                <div class="kpi-top"><span class="kpi-icon">${c.icon}</span>${c.label}</div>
+                <div class="kpi-value">${c.value}</div>
+            </div>`).join('');
+    }
+
+    const METODO_LABEL = { yape: 'Yape', plin: 'Plin', transferencia: 'Transferencia' };
+    const PERIODO_LABEL = { dia: 'Día', semana: 'Semana', mes: 'Mes', anio: 'Año' };
+
+    // ---------- Exportación PDF ----------
+    function exportarReportesPdf() {
+        if (typeof window.jspdf === 'undefined') {
+            toast('No se pudo cargar la librería de PDF.');
+            return;
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const resumen = window._reportesResumen || {};
+        const generado = new Date().toLocaleDateString('es-PE');
+        const periodoLabel = PERIODO_LABEL[reportesPeriodoActual] || reportesPeriodoActual;
+
+        doc.setFontSize(16);
+        doc.text('Reporte — Mi Cochera', 14, 18);
+        doc.setFontSize(10);
+        doc.text(`Período: ${periodoLabel}  ·  Generado el ${generado}`, 14, 24);
+
+        let y = 32;
+        doc.setFontSize(12);
+        doc.text('Resumen', 14, y);
+        doc.autoTable({
+            startY: y + 4,
+            head: [['Indicador', 'Valor']],
+            body: [
+                ['Total de reservas', resumen.total_reservas ?? '—'],
+                ['Reservas canceladas', resumen.reservas_canceladas ?? '—'],
+                ['Espacios ocupados', resumen.espacios_ocupados ?? '—'],
+                ['Espacios disponibles', resumen.espacios_disponibles ?? '—'],
+                ['Ingresos generados', money(resumen.ingresos ?? 0)],
+                ['Adelantos recibidos', money(resumen.adelantos ?? 0)],
+                ['Pagos pendientes', resumen.pagos_pendientes ?? '—'],
+                ['Pagos completados', resumen.pagos_completados ?? '—'],
+            ],
+            theme: 'grid',
+            styles: { fontSize: 9 },
+        });
+        y = doc.lastAutoTable.finalY + 10;
+
+        const metodos = resumen.metodos_pago || [];
+        doc.text('Métodos de pago', 14, y);
+        doc.autoTable({
+            startY: y + 4,
+            head: [['Método', 'Total (S/)']],
+            body: metodos.map((r) => [METODO_LABEL[r.metodo] || r.metodo, Number(r.total).toFixed(2)]),
+            theme: 'grid',
+            styles: { fontSize: 9 },
+        });
+        y = doc.lastAutoTable.finalY + 10;
+
+        const reservas = window._reportesReservasRows || [];
+        doc.text('Historial de reservas', 14, y);
+        doc.autoTable({
+            startY: y + 4,
+            head: [['Código', 'Cliente', 'Espacio', 'Ingreso', 'Total (S/)', 'Estado']],
+            body: reservas.map((r) => [
+                r.codigo,
+                r.cliente_nombre,
+                r.espacio_codigo,
+                r.fecha_hora_inicio,
+                Number(r.monto_total ?? 0).toFixed(2),
+                ESTADO_LABEL[r.estado] || r.estado,
+            ]),
+            theme: 'grid',
+            styles: { fontSize: 8 },
+        });
+
+        doc.save(`reporte_mi_cochera_${reportesPeriodoActual}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+
+    async function loadReportesReservas() {
+        const fechaFiltro = document.getElementById('reportes-filtro-fecha').value;
+        const estado = document.getElementById('reportes-filtro-estado').value;
+        const resp = await AdminApi.reservas({
+            ...(fechaFiltro ? { fecha: fechaFiltro } : {}),
+            ...(estado ? { estado } : {}),
+        });
+        const rows = resp.data || [];
+
+        document.querySelector('#tabla-reportes-reservas tbody').innerHTML = rows.map((r) => `
+            <tr>
+                <td>${esc(r.codigo)}</td>
+                <td>${esc(r.cliente_nombre)}</td>
+                <td>${esc(r.espacio_codigo)}</td>
+                <td>${fecha(r.fecha_hora_inicio)}</td>
+                <td>${money(r.monto_total)}</td>
+                <td>${badge(r.estado)}</td>
+            </tr>`).join('');
+
+        // Guardado para que el botón de exportar (CSV y PDF) use exactamente las filas visibles
+        window._reportesReservasRows = rows;
+    }
+
+    function exportarReportesReservasCsv() {
+        const rows = window._reportesReservasRows || [];
+        if (!rows.length) {
+            toast('No hay datos para exportar con este filtro.');
+            return;
+        }
+        const headers = ['Código', 'Cliente', 'Espacio', 'Ingreso', 'Total', 'Estado'];
+        const lineas = [headers.join(',')];
+        rows.forEach((r) => {
+            lineas.push([
+                r.codigo,
+                String(r.cliente_nombre ?? '').replace(/,/g, ' '),
+                r.espacio_codigo,
+                r.fecha_hora_inicio ?? '',
+                Number(r.monto_total ?? 0).toFixed(2),
+                ESTADO_LABEL[r.estado] || r.estado,
+            ].join(','));
+        });
+        const blob = new Blob(['\uFEFF' + lineas.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reservas_reporte_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     }
 
     // ---------- Espacios ----------
@@ -442,6 +617,84 @@ const AdminDashboard = (() => {
     });
 
     // ---------- Modal ----------
+    // ---------- Alertas de llegada (independiente de la vista activa) ----------
+    const alertasNotificadas = new Set(JSON.parse(sessionStorage.getItem('alertas_llegada_notificadas') || '[]'));
+
+    function marcarAlertaNotificada(key) {
+        alertasNotificadas.add(key);
+        sessionStorage.setItem('alertas_llegada_notificadas', JSON.stringify([...alertasNotificadas]));
+    }
+
+    function reproducirSonidoAlerta() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioCtx();
+            [0, 0.28, 0.56].forEach((delay, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(i % 2 === 0 ? 920 : 700, ctx.currentTime + delay);
+                gain.gain.setValueAtTime(0.22, ctx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.3);
+                osc.start(ctx.currentTime + delay);
+                osc.stop(ctx.currentTime + delay + 0.3);
+            });
+        } catch (e) {
+            console.warn('No se pudo reproducir el sonido de alerta:', e);
+        }
+    }
+
+    function mostrarAlertaLlegada(icono, titulo, mensaje) {
+        reproducirSonidoAlerta();
+        const overlay = document.createElement('div');
+        overlay.className = 'alerta-llegada-overlay';
+        overlay.innerHTML = `
+            <div class="alerta-llegada-box">
+                <button class="alerta-llegada-close" type="button" aria-label="Cerrar">✕</button>
+                <div class="alerta-llegada-icon">${icono}</div>
+                <h2>${titulo}</h2>
+                <p>${mensaje}</p>
+            </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelector('.alerta-llegada-close').addEventListener('click', () => overlay.remove());
+        requestAnimationFrame(() => overlay.classList.add('visible'));
+    }
+
+    async function chequearAlertasLlegada() {
+        let alertas;
+        try {
+            alertas = await AdminApi.alertasLlegada();
+        } catch (e) {
+            console.warn('No se pudo verificar alertas de llegada:', e);
+            return;
+        }
+        alertas.forEach((r) => {
+            const key = `${r.tipo}:${r.id}`;
+            if (alertasNotificadas.has(key)) return;
+            marcarAlertaNotificada(key);
+            if (r.tipo === 'por_llegar') {
+                mostrarAlertaLlegada(
+                    '🚗',
+                    '¡Cliente por llegar!',
+                    `<strong>${esc(r.cliente_nombre)}</strong> llega pronto al espacio <strong>${esc(r.espacio_codigo)}</strong> (reserva ${esc(r.codigo)}).`
+                );
+            } else {
+                mostrarAlertaLlegada(
+                    '✅',
+                    '¡Cliente llegó!',
+                    `<strong>${esc(r.cliente_nombre)}</strong> llegó al establecimiento — espacio <strong>${esc(r.espacio_codigo)}</strong> (reserva ${esc(r.codigo)}).`
+                );
+            }
+        });
+    }
+
+    function iniciarAlertasLlegada() {
+        chequearAlertasLlegada();
+        setInterval(chequearAlertasLlegada, 20000);
+    }
+
     function openModal(html) {
         const root = document.getElementById('modal-root');
         root.innerHTML = `<div class="modal-overlay" data-overlay><div class="modal">${html}</div></div>`;
@@ -461,10 +714,22 @@ const AdminDashboard = (() => {
         }
 
         initNav();
+        iniciarAlertasLlegada();
         document.getElementById('btn-refrescar-dashboard').addEventListener('click', loadDashboard);
         document.getElementById('btn-filtrar-reservas').addEventListener('click', loadReservas);
         document.getElementById('btn-filtrar-pagos').addEventListener('click', loadPagos);
         document.getElementById('btn-filtrar-cancelaciones').addEventListener('click', loadCancelaciones);
+
+        document.getElementById('btn-filtrar-reportes-reservas').addEventListener('click', loadReportesReservas);
+        document.getElementById('btn-exportar-reportes-reservas').addEventListener('click', exportarReportesReservasCsv);
+        document.getElementById('btn-exportar-reportes-pdf').addEventListener('click', exportarReportesPdf);
+        document.querySelectorAll('#reportes-periodo-tabs [data-periodo]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#reportes-periodo-tabs [data-periodo]').forEach((b) => b.classList.remove('tab-active'));
+                btn.classList.add('tab-active');
+                loadReportes(btn.dataset.periodo);
+            });
+        });
         loadDashboard();
     }
 

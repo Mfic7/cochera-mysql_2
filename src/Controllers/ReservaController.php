@@ -217,6 +217,7 @@ class ReservaController extends Controller
             'cliente_celular' => $reserva['cliente_celular'],
             'fecha_hora_inicio' => Dates::iso($reserva['fecha_hora_inicio']),
             'fecha_hora_fin' => Dates::iso($reserva['fecha_hora_fin']),
+            'created_at' => Dates::iso($reserva['created_at']),
             'horas_estimadas' => (float) $reserva['horas_estimadas'],
             'tarifa_hora' => (float) $reserva['tarifa_hora'],
             'monto_total' => (float) $reserva['monto_total'],

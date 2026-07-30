@@ -38,6 +38,8 @@ $router->get('admin/dashboard/reservas-del-dia', fn () => (new DashboardControll
 $router->get('admin/dashboard/reservas-recientes', fn () => (new DashboardController())->reservasRecientes());
 $router->get('admin/reportes/ingresos', fn () => (new DashboardController())->reporteIngresos());
 $router->get('admin/reportes/metodos-pago', fn () => (new DashboardController())->reporteMetodosPago());
+$router->get('admin/reportes/resumen', fn () => (new DashboardController())->reporteResumen());
+$router->get('admin/alertas-llegada', fn () => (new DashboardController())->alertasLlegada());
 
 $router->get('admin/reservas', fn () => (new ReservaAdminController())->listar());
 $router->get('admin/reservas/{id}', fn ($id) => (new ReservaAdminController())->ver($id));
@@ -61,4 +63,3 @@ $router->patch('admin/configuracion', fn () => (new AdminConfiguracionController
 $router->get('admin/cancelaciones', fn () => (new CancelacionAdminController())->listar());
 $router->get('admin/cancelaciones/{id}/comprobante', fn ($id) => (new CancelacionAdminController())->comprobante($id));
 $router->patch('admin/cancelaciones/{id}', fn ($id) => (new CancelacionAdminController())->decidir($id));
-

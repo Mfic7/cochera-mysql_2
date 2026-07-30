@@ -193,3 +193,81 @@ table tr:last-child td { border-bottom: none; }
 
 .muted { color: var(--muted); font-size: 12px; }
 .toast { position: fixed; bottom: 20px; right: 20px; background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13px; z-index: 60; }
+
+
+
+
+/* ============ ALERTA GRANDE: CLIENTE POR LLEGAR / LLEGÓ (admin) ============ */
+.alerta-llegada-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 18, 24, 0.65);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease;
+    z-index: 10000;
+}
+.alerta-llegada-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.alerta-llegada-box {
+    position: relative;
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    color: #fff;
+    padding: 36px 40px;
+    border-radius: 18px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+    max-width: 460px;
+    width: 90%;
+    text-align: center;
+    transform: scale(0.85);
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+    animation: alerta-llegada-pulse 1.4s ease-in-out infinite;
+}
+.alerta-llegada-overlay.visible .alerta-llegada-box {
+    transform: scale(1);
+}
+@keyframes alerta-llegada-pulse {
+    0%, 100% { box-shadow: 0 25px 60px rgba(0,0,0,0.4), 0 0 0 0 rgba(245,158,11,0.5); }
+    50% { box-shadow: 0 25px 60px rgba(0,0,0,0.4), 0 0 0 14px rgba(245,158,11,0); }
+}
+.alerta-llegada-icon {
+    font-size: 52px;
+    margin-bottom: 12px;
+    animation: alerta-llegada-bounce 1s ease infinite;
+}
+@keyframes alerta-llegada-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.alerta-llegada-box h2 {
+    margin: 0 0 10px;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: .01em;
+}
+.alerta-llegada-box p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+    font-weight: 500;
+}
+.alerta-llegada-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: rgba(0,0,0,0.2);
+    border: none;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+}
+.alerta-llegada-close:hover { background: rgba(0,0,0,0.35); }

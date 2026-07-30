@@ -174,6 +174,21 @@ $basePath = $config['app_base_path'];
 <section class="bottom-grid">
     <div class="panel">
         <h3>Estado de tu reserva</h3>
+        <div class="vehicle-progress" id="vehicle-progress" hidden>
+            <div class="vehicle-progress-label">
+                <span id="vehicle-progress-text">🚗 Tu vehículo está en camino…</span>
+                <strong id="vehicle-progress-eta">—</strong>
+            </div>
+            <svg viewBox="0 0 300 46" class="vehicle-track" preserveAspectRatio="none">
+                <line x1="12" y1="34" x2="288" y2="34" class="vehicle-road"></line>
+                <text x="2" y="16" class="vehicle-flag" title="Origen">📍</text>
+                <text x="146" y="13" class="vehicle-direction-arrow">➡</text>
+                <text x="272" y="16" class="vehicle-flag" title="Destino">🅿️</text>
+                <g id="vehicle-icon-group" class="vehicle-icon-group">
+                    <text x="8" y="32" class="vehicle-car-icon">🚗</text>
+                </g>
+            </svg>
+        </div>
         <div class="stepper" id="stepper">
             <div class="step active" data-estado="pendiente_pago"><span class="step-icon">⏳</span><strong>Pendiente de pago</strong><p>Completa el pago del 50%</p></div>
             <div class="step" data-estado="en_validacion"><span class="step-icon">📄</span><strong>En validación</strong><p>Validaremos tu comprobante</p></div>
@@ -204,6 +219,7 @@ $basePath = $config['app_base_path'];
 <script src="<?= $basePath ?>/assets/js/shared/parkingGridRenderer.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/api.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/holdTimer.js"></script>
+<script src="<?= $basePath ?>/assets/js/client/vehicleAnimation.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/reservationForm.js"></script>
 <script src="<?= $basePath ?>/assets/js/client/main.js"></script>
 
@@ -238,4 +254,3 @@ $basePath = $config['app_base_path'];
 </script>
 </body>
 </html>
-

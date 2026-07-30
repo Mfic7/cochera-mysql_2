@@ -40,7 +40,7 @@ $logoNegocio = Configuracion::get('logo_path', null);
             <div class="nav-item" data-view="calendario">🗓️ Calendario<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="clientes">👥 Clientes<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="pagos">💳 Pagos</div>
-            <div class="nav-item" data-view="reportes">📊 Reportes<span class="badge-soon">Pronto</span></div>
+            <div class="nav-item" data-view="reportes">📊 Reportes</div>
             <div class="nav-item" data-view="vehiculos">🚗 Vehículos<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="espacios">🅿️ Espacios</div>
             <div class="nav-item" data-view="metodos-pago">🏦 Métodos de pago</div>
@@ -150,6 +150,60 @@ $logoNegocio = Configuracion::get('logo_path', null);
             </div>
         </section>
 
+        <!-- Reportes -->
+        <section class="view" id="view-reportes">
+            <div class="content-header">
+                <div><h2>Reportes</h2><p>Estadísticas por período y detalle de reservas</p></div>
+                <div class="toolbar">
+                    <button class="btn-sm" id="btn-exportar-reportes-pdf">📄 Exportar PDF</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="toolbar" id="reportes-periodo-tabs">
+                    <button class="btn-sm tab-active" data-periodo="dia">Día</button>
+                    <button class="btn-sm" data-periodo="semana">Semana</button>
+                    <button class="btn-sm" data-periodo="mes">Mes</button>
+                    <button class="btn-sm" data-periodo="anio">Año</button>
+                </div>
+                <div class="kpi-grid" id="reportes-kpi-grid"></div>
+            </div>
+
+            <div class="grid-2">
+                <div class="panel">
+                    <h3>Ingresos</h3>
+                    <canvas id="chart-reportes-ingresos" height="140"></canvas>
+                </div>
+                <div class="panel">
+                    <h3>Métodos de pago</h3>
+                    <canvas id="chart-reportes-metodos" height="140"></canvas>
+                    <div id="reportes-metodos-leyenda"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Historial de reservas</h3>
+                <div class="toolbar">
+                    <input type="date" id="reportes-filtro-fecha" aria-label="Filtrar por fecha">
+                    <select id="reportes-filtro-estado" aria-label="Filtrar por estado">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente_pago">Pendiente de pago</option>
+                        <option value="en_validacion">En validación</option>
+                        <option value="adelanto_pagado">Adelanto pagado</option>
+                        <option value="pago_completo">Pago completo</option>
+                        <option value="cancelada">Cancelada</option>
+                        <option value="vencida">Vencida</option>
+                    </select>
+                    <button class="btn-sm" id="btn-filtrar-reportes-reservas">Filtrar</button>
+                    <button class="btn-sm btn-outline" id="btn-exportar-reportes-reservas">Exportar CSV</button>
+                </div>
+                <div class="table-wrap"><table id="tabla-reportes-reservas">
+                    <thead><tr><th>Código</th><th>Cliente</th><th>Espacio</th><th>Ingreso</th><th>Total</th><th>Estado</th></tr></thead>
+                    <tbody></tbody>
+                </table></div>
+            </div>
+        </section>
+
         <!-- Espacios -->
         <section class="view" id="view-espacios">
             <div class="content-header"><div><h2>Espacios</h2><p>Administra el estado de cada espacio de la cochera</p></div></div>
@@ -213,7 +267,7 @@ $logoNegocio = Configuracion::get('logo_path', null);
         </section>
 
         <!-- Stubs -->
-        <?php foreach (['calendario' => 'Calendario', 'clientes' => 'Clientes', 'reportes' => 'Reportes', 'vehiculos' => 'Vehículos', 'usuarios' => 'Usuarios'] as $slug => $label): ?>
+        <?php foreach (['calendario' => 'Calendario', 'clientes' => 'Clientes', 'vehiculos' => 'Vehículos', 'usuarios' => 'Usuarios'] as $slug => $label): ?>
         <section class="view" id="view-<?= $slug ?>">
             <div class="content-header"><div><h2><?= $label ?></h2></div></div>
             <div class="stub-panel">🚧 Módulo de <?= $label ?> — próximamente en una siguiente iteración.</div>
@@ -236,6 +290,8 @@ $logoNegocio = Configuracion::get('logo_path', null);
 
 <script>window.APP_BASE = <?= json_encode($basePath) ?>;</script>
 <script src="<?= $basePath ?>/assets/vendor/chart.umd.min.js"></script>
+<script src="<?= $basePath ?>/assets/vendor/jspdf.umd.min.js"></script>
+<script src="<?= $basePath ?>/assets/vendor/jspdf.plugin.autotable.min.js"></script>
 <script src="<?= $basePath ?>/assets/js/shared/parkingGridRenderer.js"></script>
 <script src="<?= $basePath ?>/assets/js/admin/api.js"></script>
 <script src="<?= $basePath ?>/assets/js/admin/charts.js"></script>
@@ -243,4 +299,3 @@ $logoNegocio = Configuracion::get('logo_path', null);
 <script src="<?= $basePath ?>/assets/js/admin/dashboard.js"></script>
 </body>
 </html>
-

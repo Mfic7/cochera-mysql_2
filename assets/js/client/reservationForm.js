@@ -8,6 +8,7 @@ const ReservationForm = (() => {
         metodoActivo: null,
         pollHandle: null,
         lastEstado: null,
+        vehicleArrivedNotifiedFor: null,
     };
 
     const ESTADO_LABEL_CLIENTE = {
@@ -32,6 +33,8 @@ const ReservationForm = (() => {
             // Buscar / ver reserva existente
             'buscar-celular', 'buscar-espacio', 'btn-buscar-reserva', 'buscar-banner-error',
             'buscar-resultado', 'buscar-r-codigo', 'buscar-r-espacio', 'buscar-r-fecha', 'buscar-r-estado', 'btn-buscar-cancelar',
+            // Animación del vehículo en camino
+            'vehicle-progress', 'vehicle-icon-group', 'vehicle-progress-text', 'vehicle-progress-eta',
         ].forEach((id) => { el[id] = document.getElementById(id); });
     }
 
@@ -434,6 +437,22 @@ const ReservationForm = (() => {
         }
         state.lastEstado = estado;
         actualizarCancelacionPanel();
+
+        // Animación del vehículo en camino: se re-renderiza en cada refresco de estado
+        // (cada ~5s mientras el polling esté activo), reusando ese mismo ciclo.
+        VehicleAnimation.render(
+            el['vehicle-progress'],
+            el['vehicle-icon-group'],
+            el['vehicle-progress-text'],
+            el['vehicle-progress-eta'],
+            state.reserva
+        );
+
+        // Aviso grande de "vehículo llegó", una sola vez por reserva
+        if (state.reserva && VehicleAnimation.haLlegado(state.reserva) && state.vehicleArrivedNotifiedFor !== state.reserva.id) {
+            state.vehicleArrivedNotifiedFor = state.reserva.id;
+            showToast('🚗✅ ¡Tu vehículo llegó al establecimiento! Presenta tu código de reserva al ingresar.');
+        }
     }
 
     // Genera un pequeño sonido de notificación sin necesidad de archivos externos
@@ -550,6 +569,15 @@ const ReservationForm = (() => {
                 actualizarStepper(reserva.estado);
                 actualizarCancelacionPanel();
                 startPolling();
+            } else {
+                // aunque esté cancelada/vencida, refrescamos la animación para que se oculte
+                VehicleAnimation.render(
+                    el['vehicle-progress'],
+                    el['vehicle-icon-group'],
+                    el['vehicle-progress-text'],
+                    el['vehicle-progress-eta'],
+                    state.reserva
+                );
             }
         } catch (e) {
             el['buscar-resultado'].hidden = true;
