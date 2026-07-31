@@ -118,4 +118,13 @@ class ReservaAdminController extends Controller
 
         $this->json(Reserva::find($reservaId));
     }
+
+    /** Conteo de reservas por día del mes indicado, para pintar la grilla del Calendario. */
+    public function calendarioResumen(): void
+    {
+        $this->requireAdmin();
+        $anio = (int) ($_GET['anio'] ?? date('Y'));
+        $mes = (int) ($_GET['mes'] ?? date('n'));
+        $this->json(Reserva::resumenPorMes($anio, $mes));
+    }
 }

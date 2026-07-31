@@ -9,7 +9,7 @@ class EspacioAvailabilityService
 {
     private const ESTADOS_ACTIVOS = ['pendiente_pago', 'en_validacion', 'adelanto_pagado', 'pago_completo'];
 
-    /** Expira en caliente (sin cron) las reservas cuyo hold de 5 min ya venció. */
+    /** Expira en caliente (sin cron) las reservas cuyo hold de 5 min ya venciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³. */
     public static function expirarHoldsVencidos(): void
     {
         Database::connection()->exec(
@@ -19,7 +19,7 @@ class EspacioAvailabilityService
     }
 
     /**
-     * Estado de cada espacio para la ventana [inicio, fin). Devuelve también
+     * Estado de cada espacio para la ventana [inicio, fin). Devuelve tambiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©n
      * conteos agregados para las tarjetas de stats del mockup.
      */
     public static function disponibilidad(string $inicio, string $fin): array

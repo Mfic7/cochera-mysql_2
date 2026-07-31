@@ -11,7 +11,7 @@ use App\Services\FileUploadService;
 
 class CancelacionController extends Controller
 {
-    /** Minutos mínimos de antelación exigidos para poder cancelar sin perder el adelanto. */
+    /** Minutos mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nimos de antelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n exigidos para poder cancelar sin perder el adelanto. */
     private const MINUTOS_LIMITE_CANCELACION = 20;
 
     public function solicitar(string $id): void
@@ -33,15 +33,15 @@ class CancelacionController extends Controller
         $minutosRestantes = ($inicioTs - time()) / 60;
         if ($minutosRestantes < self::MINUTOS_LIMITE_CANCELACION) {
             $this->error(
-                'El plazo para cancelar venció. Solo se permite cancelar hasta '
+                'El plazo para cancelar venciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³. Solo se permite cancelar hasta '
                 . self::MINUTOS_LIMITE_CANCELACION
-                . ' minutos antes de tu hora de reserva; pasado ese tiempo no hay devolución de dinero.',
+                . ' minutos antes de tu hora de reserva; pasado ese tiempo no hay devoluciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de dinero.',
                 409
             );
         }
 
         if (Cancelacion::existsForReserva($reservaId)) {
-            $this->error('Ya existe una solicitud de cancelación para esta reserva.', 409);
+            $this->error('Ya existe una solicitud de cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n para esta reserva.', 409);
         }
 
         $motivo = trim((string) ($_POST['motivo'] ?? ''));
@@ -49,7 +49,7 @@ class CancelacionController extends Controller
         $comprobantePath = null;
 
         if ($motivo === '') {
-            $this->error('Debes indicar el motivo de la cancelación.', 422);
+            $this->error('Debes indicar el motivo de la cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.', 422);
         }
         if (!isset($_FILES['comprobante'])) {
             $this->error('Debes adjuntar una imagen o PDF de tu comprobante.', 422);
@@ -64,8 +64,8 @@ class CancelacionController extends Controller
         $pdo = \App\Database::connection();
         $pdo->beginTransaction();
         try {
-            // CORRECCIÓN: Cancelacion::crear() espera (\PDO $pdo, array $datos),
-            // no una lista de parámetros sueltos. La firma anterior no coincidía
+            // CORRECCIÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œN: Cancelacion::crear() espera (\PDO $pdo, array $datos),
+            // no una lista de parÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡metros sueltos. La firma anterior no coincidÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a
             // con el modelo real y provocaba un TypeError -> Error 500.
             Cancelacion::crear($pdo, [
                 'reserva_id' => $reservaId,
@@ -74,14 +74,13 @@ class CancelacionController extends Controller
                 'comprobante_path' => $comprobantePath,
             ]);
             Reserva::actualizarEstado($reservaId, 'cancelada');
-            ReservaEstadoHistorial::registrar($pdo, $reservaId, $reserva['estado'], 'cancelada', 'cliente', null, 'Solicitud de cancelación enviada: ' . $motivo);
+            ReservaEstadoHistorial::registrar($pdo, $reservaId, $reserva['estado'], 'cancelada', 'cliente', null, 'Solicitud de cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n enviada: ' . $motivo);
             $pdo->commit();
         } catch (\Throwable $e) {
             $pdo->rollBack();
             throw $e;
         }
 
-        $this->json(['ok' => true, 'message' => 'Solicitud de cancelación enviada.']);
+        $this->json(['ok' => true, 'message' => 'Solicitud de cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n enviada.']);
     }
 }
-

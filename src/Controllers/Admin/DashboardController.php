@@ -266,3 +266,4 @@ class DashboardController extends Controller
         $this->json($resultado);
     }
 }
+

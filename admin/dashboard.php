@@ -37,15 +37,15 @@ $logoNegocio = Configuracion::get('logo_path', null);
         <nav id="nav">
             <div class="nav-item active" data-view="dashboard">🏠 Dashboard</div>
             <div class="nav-item" data-view="reservas">📅 Reservas</div>
-            <div class="nav-item" data-view="calendario">🗓️ Calendario<span class="badge-soon">Pronto</span></div>
-            <div class="nav-item" data-view="clientes">👥 Clientes<span class="badge-soon">Pronto</span></div>
+            <div class="nav-item" data-view="calendario">🗓️ Calendario</div>
+            <div class="nav-item" data-view="clientes">👥 Clientes</div>
             <div class="nav-item" data-view="pagos">💳 Pagos</div>
             <div class="nav-item" data-view="reportes">📊 Reportes</div>
             <div class="nav-item" data-view="vehiculos">🚗 Vehículos<span class="badge-soon">Pronto</span></div>
             <div class="nav-item" data-view="espacios">🅿️ Espacios</div>
             <div class="nav-item" data-view="metodos-pago">🏦 Métodos de pago</div>
             <div class="nav-item" data-view="cancelaciones">🚫 Cancelaciones<span class="badge-soon" id="badge-cancelaciones-pendientes" style="display:none"></span></div>
-            <div class="nav-item" data-view="usuarios">🧑‍💼 Usuarios<span class="badge-soon">Pronto</span></div>
+            <div class="nav-item" data-view="usuarios">🧑‍💼 Usuarios</div>
             <div class="nav-item" data-view="configuracion">⚙️ Configuración</div>
             <div class="nav-item" data-view="suscripcion">👑 Suscripción</div>
         </nav>
@@ -125,6 +125,41 @@ $logoNegocio = Configuracion::get('logo_path', null);
             <div class="panel">
                 <div class="table-wrap"><table id="tabla-reservas">
                     <thead><tr><th>Código</th><th>Cliente</th><th>Celular</th><th>Espacio</th><th>Ingreso</th><th>Total</th><th>Adelanto</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody></tbody>
+                </table></div>
+            </div>
+        </section>
+
+        <!-- Calendario -->
+        <section class="view" id="view-calendario">
+            <div class="content-header">
+                <div><h2>Calendario</h2><p>Vista mensual de reservas</p></div>
+                <div class="toolbar">
+                    <button class="btn-sm" id="btn-mes-anterior">← Anterior</button>
+                    <strong id="calendario-mes-label" style="min-width:160px;text-align:center;display:inline-block;">—</strong>
+                    <button class="btn-sm" id="btn-mes-siguiente">Siguiente →</button>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="legend">
+                    <span><i class="dot disponible"></i>Sin reservas</span>
+                    <span><i class="dot reservado"></i>1-3 reservas</span>
+                    <span><i class="dot ocupado"></i>4+ reservas</span>
+                </div>
+                <div class="calendario-grid" id="calendario-grid"></div>
+            </div>
+        </section>
+
+        <!-- Clientes -->
+        <section class="view" id="view-clientes">
+            <div class="content-header"><div><h2>Clientes</h2><p>Historial de clientes que han reservado</p></div></div>
+            <div class="toolbar">
+                <input type="text" id="filtro-busqueda-clientes" placeholder="Buscar por nombre o celular" aria-label="Buscar cliente">
+                <button class="btn-sm" id="btn-filtrar-clientes">Buscar</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap"><table id="tabla-clientes">
+                    <thead><tr><th>Cliente</th><th>Celular</th><th>Total reservas</th><th>Canceladas</th><th>Total gastado</th><th>Última reserva</th><th>Acciones</th></tr></thead>
                     <tbody></tbody>
                 </table></div>
             </div>
@@ -242,6 +277,20 @@ $logoNegocio = Configuracion::get('logo_path', null);
             </div>
         </section>
 
+        <!-- Usuarios -->
+        <section class="view" id="view-usuarios">
+            <div class="content-header">
+                <div><h2>Usuarios</h2><p>Administra las cuentas de acceso a este panel</p></div>
+                <button class="btn-sm" id="btn-nuevo-usuario">+ Nuevo usuario</button>
+            </div>
+            <div class="panel">
+                <div class="table-wrap"><table id="tabla-usuarios">
+                    <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Último acceso</th><th>Acciones</th></tr></thead>
+                    <tbody></tbody>
+                </table></div>
+            </div>
+        </section>
+
         <!-- Configuración -->
         <section class="view" id="view-configuracion">
             <div class="content-header"><div><h2>Configuración</h2><p>Datos generales del negocio</p></div></div>
@@ -267,7 +316,7 @@ $logoNegocio = Configuracion::get('logo_path', null);
         </section>
 
         <!-- Stubs -->
-        <?php foreach (['calendario' => 'Calendario', 'clientes' => 'Clientes', 'vehiculos' => 'Vehículos', 'usuarios' => 'Usuarios'] as $slug => $label): ?>
+        <?php foreach (['vehiculos' => 'Vehículos'] as $slug => $label): ?>
         <section class="view" id="view-<?= $slug ?>">
             <div class="content-header"><div><h2><?= $label ?></h2></div></div>
             <div class="stub-panel">🚧 Módulo de <?= $label ?> — próximamente en una siguiente iteración.</div>

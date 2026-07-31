@@ -17,7 +17,7 @@ if (AdminAuth::check()) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi Cochera — Panel de administración</title>
+<title>Mi Cochera ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Panel de administraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n</title>
 <link rel="stylesheet" href="<?= $basePath ?>/assets/css/admin.css">
 </head>
 
@@ -25,10 +25,10 @@ if (AdminAuth::check()) {
 <div class="login-card">
     <div class="brand-badge">P</div>
     <h1>Mi Cochera</h1>
-    <p class="muted">Panel de administración</p>
+    <p class="muted">Panel de administraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n</p>
     <form id="login-form">
-        <label>Correo electrónico<input type="email" id="email" required autocomplete="username"></label>
-        <label>Contraseña<input type="password" id="password" required autocomplete="current-password"></label>
+        <label>Correo electrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³nico<input type="email" id="email" required autocomplete="username"></label>
+        <label>ContraseÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±a<input type="password" id="password" required autocomplete="current-password"></label>
         <p class="form-error" id="form-error" hidden></p>
         <button type="submit" class="btn-primary">Ingresar</button>
     </form>

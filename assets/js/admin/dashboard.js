@@ -11,7 +11,7 @@ const AdminDashboard = (() => {
     let reportesPeriodoActual = 'dia';
 
     function money(n) { return 'S/ ' + Number(n).toFixed(2); }
-    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function esc(s) { return String(s ?? '').replaceAll(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
     function fecha(s) { return s ? new Date(s.replace(' ', 'T')).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
     function hora(s) { return s ? new Date(s.replace(' ', 'T')).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '—'; }
     function badge(estado) { return `<span class="status-badge ${estado}">${ESTADO_LABEL[estado] || estado}</span>`; }
@@ -45,6 +45,9 @@ const AdminDashboard = (() => {
             cancelaciones: loadCancelaciones,
             configuracion: loadConfiguracion,
             reportes: () => loadReportes(reportesPeriodoActual),
+            usuarios: loadUsuarios,
+            clientes: loadClientes,
+            calendario: loadCalendario,
         };
         if (loaders[view]) loaders[view]();
     }
@@ -294,7 +297,7 @@ const AdminDashboard = (() => {
 
     // ---------- Exportación PDF ----------
     function exportarReportesPdf() {
-        if (typeof window.jspdf === 'undefined') {
+        if (window.jspdf === undefined) {
             toast('No se pudo cargar la librería de PDF.');
             return;
         }
@@ -395,7 +398,7 @@ const AdminDashboard = (() => {
         rows.forEach((r) => {
             lineas.push([
                 r.codigo,
-                String(r.cliente_nombre ?? '').replace(/,/g, ' '),
+                String(r.cliente_nombre ?? '').replaceAll(',', ' '),
                 r.espacio_codigo,
                 r.fecha_hora_inicio ?? '',
                 Number(r.monto_total ?? 0).toFixed(2),
@@ -726,6 +729,270 @@ const AdminDashboard = (() => {
         setInterval(chequearAlertasLlegada, 20000);
     }
 
+    // ---------- Usuarios ----------
+    const ROL_LABEL = { administrador: 'Administrador', operador: 'Operador' };
+
+    async function loadUsuarios() {
+        const rows = await AdminApi.usuarios();
+        document.querySelector('#tabla-usuarios tbody').innerHTML = rows.map((u) => `
+            <tr>
+                <td>${esc(u.nombre)}</td>
+                <td>${esc(u.email)}</td>
+                <td>${ROL_LABEL[u.rol] || u.rol}</td>
+                <td>${u.activo ? '<span class="status-badge pago_completo">Activo</span>' : '<span class="status-badge cancelada">Inactivo</span>'}</td>
+                <td>${u.ultimo_login ? fecha(u.ultimo_login) : 'Nunca'}</td>
+                <td><button class="btn-sm" data-editar-usuario="${u.id}">Editar</button></td>
+            </tr>`).join('');
+
+        document.querySelectorAll('[data-editar-usuario]').forEach((b) => {
+            const usuario = rows.find((u) => String(u.id) === b.dataset.editarUsuario);
+            b.addEventListener('click', () => abrirModalUsuario(usuario));
+        });
+    }
+
+    function camposUsuarioModal(usuario) {
+        const esNuevo = !usuario;
+        const campoActivo = esNuevo ? '' : `
+            <div class="form-field">
+                <label><input type="checkbox" id="modal-usuario-activo" ${usuario.activo ? 'checked' : ''}> Cuenta activa</label>
+            </div>`;
+        return `
+            <div class="form-field"><label>Nombre completo</label><input id="modal-usuario-nombre" value="${esNuevo ? '' : esc(usuario.nombre)}"></div>
+            <div class="form-field"><label>Correo</label><input id="modal-usuario-email" type="email" value="${esNuevo ? '' : esc(usuario.email)}" ${esNuevo ? '' : 'disabled'}></div>
+            <div class="form-field">
+                <label>Rol</label>
+                <select id="modal-usuario-rol">
+                    <option value="administrador" ${!esNuevo && usuario.rol === 'administrador' ? 'selected' : ''}>Administrador</option>
+                    <option value="operador" ${!esNuevo && usuario.rol === 'operador' ? 'selected' : ''}>Operador</option>
+                </select>
+            </div>
+            <div class="form-field">
+                <label>${esNuevo ? 'Contraseña' : 'Nueva contraseña (opcional)'}</label>
+                <input id="modal-usuario-password" type="password" placeholder="${esNuevo ? '' : 'Dejar en blanco para no cambiar'}">
+            </div>
+            ${campoActivo}`;
+    }
+
+    async function guardarUsuarioModal(usuario) {
+        const esNuevo = !usuario;
+        const nombre = document.getElementById('modal-usuario-nombre').value.trim();
+        const email = document.getElementById('modal-usuario-email').value.trim();
+        const rol = document.getElementById('modal-usuario-rol').value;
+        const password = document.getElementById('modal-usuario-password').value;
+
+        try {
+            if (esNuevo) {
+                await AdminApi.crearUsuario({ nombre, email, rol, password });
+                toast('Usuario creado.');
+            } else {
+                const activo = document.getElementById('modal-usuario-activo').checked;
+                const datos = { nombre, rol, activo };
+                if (password) datos.password = password;
+                await AdminApi.actualizarUsuario(usuario.id, datos);
+                toast('Usuario actualizado.');
+            }
+            closeModal();
+            loadUsuarios();
+        } catch (e) {
+            toast(e.data?.error || 'No se pudo guardar.');
+        }
+    }
+
+    function abrirModalUsuario(usuario) {
+        openModal(`
+            <h3>${usuario ? 'Editar usuario' : 'Nuevo usuario'} <button class="modal-close" data-close>×</button></h3>
+            ${camposUsuarioModal(usuario)}
+            <button class="btn-primary" type="button" id="btn-guardar-usuario">Guardar</button>
+        `);
+        document.getElementById('btn-guardar-usuario').addEventListener('click', () => guardarUsuarioModal(usuario));
+    }
+
+    // ---------- Calendario ----------
+    const MESES_LABEL = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+    ];
+    let calendarioAnio = null;
+    let calendarioMes = null;
+
+    async function loadCalendario() {
+        if (calendarioAnio === null) {
+            const hoy = new Date();
+            calendarioAnio = hoy.getFullYear();
+            calendarioMes = hoy.getMonth() + 1;
+        }
+        await renderCalendario();
+    }
+
+    function claseBadgeCalendario(total) {
+        if (total === 0) return 'sin';
+        return total <= 3 ? 'baja' : 'alta';
+    }
+
+    function celdaCalendario(dia, fechaStr, totalesPorFecha, hoyStr) {
+        const total = totalesPorFecha[fechaStr] || 0;
+        const nivel = claseBadgeCalendario(total);
+        const esHoy = fechaStr === hoyStr;
+        const diaSemana = new Date(fechaStr + 'T00:00:00').getDay();
+        const esFinde = diaSemana === 0 || diaSemana === 6;
+
+        const clases = ['calendario-dia', `nivel-${nivel}`];
+        if (esHoy) clases.push('calendario-dia-hoy');
+        if (esFinde) clases.push('calendario-dia-finde');
+
+        const badge = total > 0 ? `<span class="calendario-dia-badge">${total}</span>` : '';
+        const tagHoy = esHoy ? '<span class="calendario-dia-hoy-tag">HOY</span>' : '';
+
+        return `
+            <div class="${clases.join(' ')}" data-fecha="${fechaStr}">
+                <div class="calendario-dia-top">
+                    <span class="calendario-dia-numero">${dia}</span>
+                    ${tagHoy}
+                </div>
+                ${badge}
+            </div>`;
+    }
+
+    async function renderCalendario() {
+        document.getElementById('calendario-mes-label').textContent = `${MESES_LABEL[calendarioMes - 1]} ${calendarioAnio}`;
+
+        let resumen = [];
+        try {
+            resumen = await AdminApi.calendarioResumen(calendarioAnio, calendarioMes);
+        } catch (e) {
+            console.warn('No se pudo cargar el resumen del calendario:', e);
+        }
+        const totalesPorFecha = {};
+        resumen.forEach((r) => { totalesPorFecha[r.fecha] = Number(r.total); });
+
+        const primerDia = new Date(calendarioAnio, calendarioMes - 1, 1);
+        const diasEnMes = new Date(calendarioAnio, calendarioMes, 0).getDate();
+        const diaSemanaInicio = (primerDia.getDay() + 6) % 7;
+        const hoyStr = new Date().toISOString().slice(0, 10);
+
+        const encabezados = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+            .map((d) => `<div class="calendario-dia-header">${d}</div>`).join('');
+
+        const celdasVacias = Array.from({ length: diaSemanaInicio }, () => '<div class="calendario-dia vacio"></div>').join('');
+        const celdasDias = Array.from({ length: diasEnMes }, (_, i) => {
+            const dia = i + 1;
+            const fechaStr = `${calendarioAnio}-${String(calendarioMes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+            return celdaCalendario(dia, fechaStr, totalesPorFecha, hoyStr);
+        }).join('');
+
+        document.getElementById('calendario-grid').innerHTML = encabezados + celdasVacias + celdasDias;
+
+        document.querySelectorAll('.calendario-dia[data-fecha]').forEach((celda) => {
+            celda.addEventListener('click', () => abrirDiaCalendario(celda.dataset.fecha));
+        });
+    }
+
+    function cambiarMesCalendario(delta) {
+        calendarioMes += delta;
+        if (calendarioMes < 1) { calendarioMes = 12; calendarioAnio -= 1; }
+        if (calendarioMes > 12) { calendarioMes = 1; calendarioAnio += 1; }
+        renderCalendario();
+    }
+
+    async function abrirDiaCalendario(fechaSeleccionada) {
+        const resp = await AdminApi.reservas({ fecha: fechaSeleccionada });
+        const filas = (resp.data || []).map((r) => `
+            <tr>
+                <td>${esc(r.codigo)}</td>
+                <td>${esc(r.cliente_nombre)}</td>
+                <td>${esc(r.espacio_codigo)}</td>
+                <td>${fecha(r.fecha_hora_inicio)}</td>
+                <td>${money(r.monto_total)}</td>
+                <td>${badge(r.estado)}</td>
+            </tr>`).join('');
+
+        openModal(`
+            <h3>Reservas del ${fechaSeleccionada} <button class="modal-close" data-close>×</button></h3>
+            <div class="table-wrap"><table>
+                <thead><tr><th>Código</th><th>Cliente</th><th>Espacio</th><th>Ingreso</th><th>Total</th><th>Estado</th></tr></thead>
+                <tbody>${filas || '<tr><td colspan="6">Sin reservas ese día.</td></tr>'}</tbody>
+            </table></div>
+        `);
+    }
+
+    // ---------- Clientes ----------
+    const CLIENTE_AVATAR_COLORS = ['#f59e0b', '#9333ea', '#06b6ad', '#2563eb', '#e11d48', '#16a34a'];
+
+    function inicialesCliente(nombre) {
+        const partes = String(nombre ?? '').trim().split(/\s+/).filter(Boolean);
+        if (!partes.length) return '?';
+        const primera = partes[0][0] ?? '';
+        const segunda = partes.length > 1 ? partes[1][0] ?? '' : '';
+        return (primera + segunda).toUpperCase();
+    }
+
+    function colorCliente(texto) {
+        let hash = 0;
+        for (let i = 0; i < texto.length; i++) {
+            hash = texto.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return CLIENTE_AVATAR_COLORS[Math.abs(hash) % CLIENTE_AVATAR_COLORS.length];
+    }
+
+    function filaCliente(c) {
+        const badgeReservas = c.total_reservas >= 5
+            ? `<span class="cliente-reservas-badge frecuente">${c.total_reservas}</span>`
+            : `<span class="cliente-reservas-badge">${c.total_reservas}</span>`;
+        const badgeCanceladas = c.reservas_canceladas > 0
+            ? `<span class="cliente-canceladas-badge">${c.reservas_canceladas}</span>`
+            : '<span class="muted">0</span>';
+
+        return `
+            <tr>
+                <td>
+                    <div class="cliente-cell">
+                        <span class="cliente-avatar" style="background:${colorCliente(c.cliente_celular)}">${inicialesCliente(c.cliente_nombre)}</span>
+                        <span class="cliente-nombre">${esc(c.cliente_nombre)}</span>
+                    </div>
+                </td>
+                <td class="cliente-celular">${esc(c.cliente_celular)}</td>
+                <td>${badgeReservas}</td>
+                <td>${badgeCanceladas}</td>
+                <td class="cliente-gastado">${money(c.total_gastado)}</td>
+                <td>${c.ultima_reserva ? fecha(c.ultima_reserva) : '—'}</td>
+                <td><button class="btn-sm" data-ver-historial="${esc(c.cliente_celular)}">Ver historial</button></td>
+            </tr>`;
+    }
+
+    async function loadClientes() {
+        const busqueda = document.getElementById('filtro-busqueda-clientes').value.trim();
+        const rows = await AdminApi.clientes(busqueda || null);
+        document.querySelector('#tabla-clientes tbody').innerHTML = rows.map(filaCliente).join('');
+
+        document.querySelectorAll('[data-ver-historial]').forEach((b) => {
+            b.addEventListener('click', () => abrirHistorialCliente(b.dataset.verHistorial));
+        });
+    }
+
+    function filaHistorialCliente(r) {
+        return `
+            <tr>
+                <td>${esc(r.codigo)}</td>
+                <td>${esc(r.espacio_codigo)}</td>
+                <td>${fecha(r.fecha_hora_inicio)}</td>
+                <td>${money(r.monto_total)}</td>
+                <td>${badge(r.estado)}</td>
+            </tr>`;
+    }
+
+    async function abrirHistorialCliente(celular) {
+        const reservas = await AdminApi.historialCliente(celular);
+        const filas = reservas.map(filaHistorialCliente).join('');
+
+        openModal(`
+            <h3>Historial de ${esc(celular)} <button class="modal-close" data-close>×</button></h3>
+            <div class="table-wrap"><table>
+                <thead><tr><th>Código</th><th>Espacio</th><th>Ingreso</th><th>Total</th><th>Estado</th></tr></thead>
+                <tbody>${filas || '<tr><td colspan="5">Sin reservas registradas.</td></tr>'}</tbody>
+            </table></div>
+        `);
+    }
+
     function openModal(html) {
         const root = document.getElementById('modal-root');
         root.innerHTML = `<div class="modal-overlay" data-overlay><div class="modal">${html}</div></div>`;
@@ -750,16 +1017,21 @@ const AdminDashboard = (() => {
         document.getElementById('btn-filtrar-reservas').addEventListener('click', loadReservas);
         document.getElementById('btn-filtrar-pagos').addEventListener('click', loadPagos);
         document.getElementById('btn-filtrar-cancelaciones').addEventListener('click', loadCancelaciones);
+        document.getElementById('btn-nuevo-usuario').addEventListener('click', () => abrirModalUsuario(null));
+        document.getElementById('btn-filtrar-clientes').addEventListener('click', loadClientes);
+        document.getElementById('btn-mes-anterior').addEventListener('click', () => cambiarMesCalendario(-1));
+        document.getElementById('btn-mes-siguiente').addEventListener('click', () => cambiarMesCalendario(1));
 
         document.getElementById('btn-filtrar-reportes-reservas').addEventListener('click', loadReportesReservas);
         document.getElementById('btn-exportar-reportes-reservas').addEventListener('click', exportarReportesReservasCsv);
         document.getElementById('btn-exportar-reportes-pdf').addEventListener('click', exportarReportesPdf);
+        function activarTabPeriodo(btn) {
+            document.querySelectorAll('#reportes-periodo-tabs [data-periodo]').forEach((b) => b.classList.remove('tab-active'));
+            btn.classList.add('tab-active');
+            loadReportes(btn.dataset.periodo);
+        }
         document.querySelectorAll('#reportes-periodo-tabs [data-periodo]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#reportes-periodo-tabs [data-periodo]').forEach((b) => b.classList.remove('tab-active'));
-                btn.classList.add('tab-active');
-                loadReportes(btn.dataset.periodo);
-            });
+            btn.addEventListener('click', () => activarTabPeriodo(btn));
         });
         loadDashboard();
     }

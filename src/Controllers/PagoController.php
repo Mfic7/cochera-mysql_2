@@ -33,10 +33,10 @@ class PagoController extends Controller
         $metodo = $input['metodo'] ?? '';
         $numeroOperacion = trim((string) ($input['numero_operacion'] ?? ''));
         if (!in_array($metodo, self::METODOS_VALIDOS, true)) {
-            $this->error('Método de pago inválido', 422);
+            $this->error('MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©todo de pago invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido', 422);
         }
         if ($numeroOperacion === '') {
-            $this->error('El número de operación es obligatorio', 422);
+            $this->error('El nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºmero de operaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n es obligatorio', 422);
         }
         if (!isset($_FILES['comprobante'])) {
             $this->error('Debes adjuntar el comprobante de pago', 422);

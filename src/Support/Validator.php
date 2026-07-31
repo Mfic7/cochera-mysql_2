@@ -6,7 +6,7 @@ class ValidationException extends \RuntimeException
 {
     public function __construct(public readonly array $errors)
     {
-        parent::__construct('Datos inválidos');
+        parent::__construct('Datos invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos');
     }
 }
 
@@ -29,7 +29,7 @@ class Validator
     public function numeric(string $field, string $label): static
     {
         if (isset($this->data[$field]) && trim((string) $this->data[$field]) !== '' && !is_numeric($this->data[$field])) {
-            $this->errors[$field] = "$label debe ser numérico";
+            $this->errors[$field] = "$label debe ser numÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rico";
         }
         return $this;
     }
@@ -37,13 +37,13 @@ class Validator
     public function in(string $field, array $allowed, string $label): static
     {
         if (isset($this->data[$field]) && !in_array($this->data[$field], $allowed, true)) {
-            $this->errors[$field] = "$label inválido";
+            $this->errors[$field] = "$label invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido";
         }
         return $this;
     }
 
     /**
-     * Nombre completo: solo letras/espacios/tildes, mínimo 3 caracteres,
+     * Nombre completo: solo letras/espacios/tildes, mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nimo 3 caracteres,
      * y al menos 2 palabras (nombre + apellido).
      */
     public function nombreCompleto(string $field, string $label): static
@@ -61,7 +61,7 @@ class Validator
         return $this;
     }
 
-    /** Devuelve el mensaje de error del nombre completo, o null si es válido (o vacío, ya cubierto por required()). */
+    /** Devuelve el mensaje de error del nombre completo, o null si es vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido (o vacÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o, ya cubierto por required()). */
     private function validarNombreCompleto(string $valor, string $label): ?string
     {
         if ($valor === '') {
@@ -77,9 +77,9 @@ class Validator
     }
 
     /**
-     * Celular peruano: 9 dígitos, debe empezar en 9.
+     * Celular peruano: 9 dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­gitos, debe empezar en 9.
      * Acepta espacios/guiones en la entrada (la limpieza final se hace en el controller,
-     * ya que $data es readonly y no se puede normalizar aquí).
+     * ya que $data es readonly y no se puede normalizar aquÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­).
      */
     public function celularPeru(string $field, string $label): static
     {
@@ -95,7 +95,7 @@ class Validator
         }
 
         if (!preg_match('/^9\d{8}$/', $limpio)) {
-            $this->errors[$field] = "$label debe tener 9 dígitos y empezar con 9 (ej. 987654321)";
+            $this->errors[$field] = "$label debe tener 9 dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­gitos y empezar con 9 (ej. 987654321)";
         }
 
         return $this;
@@ -109,4 +109,3 @@ class Validator
         return $this->data;
     }
 }
-

@@ -195,8 +195,6 @@ table tr:last-child td { border-bottom: none; }
 .toast { position: fixed; bottom: 20px; right: 20px; background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13px; z-index: 60; }
 
 
-
-
 /* ============ ALERTA GRANDE: CLIENTE POR LLEGAR / LLEGÓ (admin) ============ */
 .alerta-llegada-overlay {
     position: fixed;
@@ -216,7 +214,7 @@ table tr:last-child td { border-bottom: none; }
 }
 .alerta-llegada-box {
     position: relative;
-    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    background: linear-gradient(135deg, #c2410c, #7c2d12);
     color: #fff;
     padding: 36px 40px;
     border-radius: 18px;
@@ -232,8 +230,8 @@ table tr:last-child td { border-bottom: none; }
     transform: scale(1);
 }
 @keyframes alerta-llegada-pulse {
-    0%, 100% { box-shadow: 0 25px 60px rgba(0,0,0,0.4), 0 0 0 0 rgba(245,158,11,0.5); }
-    50% { box-shadow: 0 25px 60px rgba(0,0,0,0.4), 0 0 0 14px rgba(245,158,11,0); }
+    0%, 100% { box-shadow: 0 25px 60px rgba(0,0,0,0.4), 0 0 0 0 rgba(194,65,12,0.5); }
+    50% { box-shadow: 0 25px 60px rgba(0,0,0,0.4), 0 0 0 14px rgba(194,65,12,0); }
 }
 .alerta-llegada-icon {
     font-size: 52px;
@@ -271,13 +269,6 @@ table tr:last-child td { border-bottom: none; }
     line-height: 1;
 }
 .alerta-llegada-close:hover { background: rgba(0,0,0,0.35); }
-
-
-
-
-
-
-
 
 
 /* ============ MÉTODOS DE PAGO: tarjetas con identidad de marca ============ */
@@ -352,3 +343,98 @@ table tr:last-child td { border-bottom: none; }
     transition: filter .15s ease, transform .1s ease;
 }
 .btn-metodo-guardar:hover { filter: brightness(0.9); transform: translateY(-1px); }
+
+
+
+
+/* ============ TABLA DE CLIENTES ============ */
+#tabla-clientes tbody tr { transition: background .12s ease; }
+#tabla-clientes tbody tr:hover { background: #fafbfc; }
+
+.cliente-cell { display: flex; align-items: center; gap: 10px; }
+.cliente-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 12px; flex-shrink: 0;
+}
+.cliente-nombre { font-weight: 600; }
+.cliente-celular { color: var(--muted); font-size: 12.5px; letter-spacing: .02em; }
+
+.cliente-reservas-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 24px; padding: 3px 9px; border-radius: 20px;
+    background: #eef0f3; color: var(--ink); font-weight: 700; font-size: 12px;
+}
+.cliente-reservas-badge.frecuente { background: #fff3d6; color: #92650a; }
+
+.cliente-canceladas-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; padding: 2px 8px; border-radius: 20px;
+    background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 12px;
+}
+
+.cliente-gastado { font-weight: 700; color: #166534; }
+
+
+
+
+
+
+
+/* ============ CALENDARIO ============ */
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+.calendario-dia-header {
+    text-align: center; font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; padding: 6px 0;
+}
+
+.calendario-dia {
+    min-height: 84px;
+    border-radius: 10px;
+    border-left: 4px solid var(--nivel-color, var(--border));
+    background: var(--nivel-bg, #fff);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 18, 24, .04);
+    transition: box-shadow .15s ease, transform .15s ease;
+}
+.calendario-dia:hover { box-shadow: 0 8px 18px rgba(15, 18, 24, .12); transform: translateY(-2px); }
+.calendario-dia.vacio { background: transparent; border-left-color: transparent; box-shadow: none; cursor: default; }
+.calendario-dia.vacio:hover { transform: none; box-shadow: none; }
+
+.calendario-dia.nivel-sin { --nivel-color: #86efac; --nivel-bg: #f2fbf5; }
+.calendario-dia.nivel-baja { --nivel-color: #fbbf24; --nivel-bg: #fffaf0; }
+.calendario-dia.nivel-alta { --nivel-color: #f87171; --nivel-bg: #fef3f3; }
+
+.calendario-dia-finde:not(.nivel-baja):not(.nivel-alta) { --nivel-bg: #f6f7fa; }
+
+.calendario-dia-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.calendario-dia-numero { font-size: 15px; font-weight: 700; color: var(--ink); }
+
+.calendario-dia-hoy { box-shadow: 0 0 0 2px var(--gold) inset, 0 8px 18px rgba(245, 180, 0, .25); }
+.calendario-dia-hoy-tag {
+    font-size: 8.5px; font-weight: 800; letter-spacing: .04em;
+    background: var(--gold); color: #fff; padding: 1px 5px; border-radius: 8px;
+}
+
+.calendario-dia-badge {
+    align-self: flex-end;
+    font-size: 11px; font-weight: 800; color: #fff;
+    background: var(--nivel-color, var(--muted));
+    padding: 2px 9px; border-radius: 20px;
+    min-width: 20px; text-align: center;
+}
+
+@media (max-width: 700px) {
+    .calendario-dia { min-height: 56px; padding: 5px 6px; }
+    .calendario-dia-numero { font-size: 12px; }
+    .calendario-dia-badge { font-size: 9px; padding: 1px 6px; }
+    .calendario-dia-hoy-tag { display: none; }
+}

@@ -16,7 +16,7 @@ class EspacioController extends Controller
         $inicio = $fecha . ' ' . $horaInicio . ':00';
         $inicioTs = strtotime($inicio);
         if ($inicioTs === false) {
-            $this->error('Fecha/hora inválida', 422);
+            $this->error('Fecha/hora invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lida', 422);
         }
         $fin = date('Y-m-d H:i:s', (int) ($inicioTs + $horas * 3600));
 

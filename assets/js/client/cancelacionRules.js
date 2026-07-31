@@ -1,8 +1,8 @@
 /**
- * Lógica de la sección "Solicitar cancelación" del perfil del cliente.
+ * LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³gica de la secciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n "Solicitar cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n" del perfil del cliente.
  * Requiere que exista una variable global con los datos de la reserva activa:
  *   window.reservaActual = { id, token, codigo, fecha_hora_inicio, estado }
- * Ajusta el nombre "window.reservaActual" según cómo la guardes en reservationForm.js/main.js.
+ * Ajusta el nombre "window.reservaActual" segÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºn cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³mo la guardes en reservationForm.js/main.js.
  */
 (function () {
   const MINUTOS_LIMITE = 20;
@@ -43,7 +43,7 @@
 
     if (bloqueado) {
       mostrarError(
-        `⛔ El plazo para cancelar venció. Solo se permite cancelar hasta ${MINUTOS_LIMITE} minutos antes de tu hora de reserva.`
+        `ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â El plazo para cancelar venciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³. Solo se permite cancelar hasta ${MINUTOS_LIMITE} minutos antes de tu hora de reserva.`
       );
     } else {
       ocultarError();
@@ -63,7 +63,7 @@
 
     const motivo = motivoEl.value.trim();
     if (motivo === '') {
-      mostrarError('Debes indicar el motivo de la cancelación.');
+      mostrarError('Debes indicar el motivo de la cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.');
       return;
     }
     if (!comprobanteEl.files.length) {
@@ -91,18 +91,18 @@
         throw new Error(data.error || data.message || 'No se pudo enviar la solicitud.');
       }
 
-      btnEnviar.textContent = 'Solicitud enviada ✓';
+      btnEnviar.textContent = 'Solicitud enviada ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ';
       [motivoEl, numOperacionEl, comprobanteEl].forEach((el) => (el.disabled = true));
     } catch (err) {
       mostrarError(err.message);
       btnEnviar.disabled = false;
-      btnEnviar.textContent = 'Enviar solicitud de cancelación';
+      btnEnviar.textContent = 'Enviar solicitud de cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n';
     }
   }
 
   /**
-   * Llamar esta función cuando la reserva del cliente ya esté cargada
-   * (por ejemplo, al final de reservationForm.js, después de obtener la reserva del backend).
+   * Llamar esta funciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n cuando la reserva del cliente ya estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© cargada
+   * (por ejemplo, al final de reservationForm.js, despuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s de obtener la reserva del backend).
    */
   window.initPanelCancelacion = function (reserva) {
     window.reservaActual = reserva;

@@ -13,7 +13,7 @@ class ReservaConflictException extends \RuntimeException
 {
 }
 
-/** Se lanza cuando no se pudo generar un código único de reserva tras varios intentos. */
+/** Se lanza cuando no se pudo generar un cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºnico de reserva tras varios intentos. */
 class ReservaCodigoException extends \RuntimeException
 {
 }
@@ -22,7 +22,7 @@ class ReservaService
 {
     /**
      * Crea una reserva con bloqueo temporal (hold), garantizando primero-en-llegar
-     * mediante SELECT ... FOR UPDATE sobre la fila del espacio dentro de una transacción.
+     * mediante SELECT ... FOR UPDATE sobre la fila del espacio dentro de una transacciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.
      */
     public static function crear(array $datos): array
     {
@@ -34,7 +34,7 @@ class ReservaService
         $horas = (float) $datos['horas_estimadas'];
         $inicioTs = strtotime($inicio);
         if ($inicioTs === false) {
-            throw new \InvalidArgumentException('Fecha/hora de inicio inválida');
+            throw new \InvalidArgumentException('Fecha/hora de inicio invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lida');
         }
         $fin = date('Y-m-d H:i:s', (int) ($inicioTs + $horas * 3600));
 
@@ -47,7 +47,7 @@ class ReservaService
             $lockStmt->execute(['id' => $espacioId]);
             $espacio = $lockStmt->fetch();
             if (!$espacio || !$espacio['activo']) {
-                throw new ReservaConflictException('El espacio no existe o no está disponible.');
+                throw new ReservaConflictException('El espacio no existe o no estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ disponible.');
             }
 
             // Expira holds vencidos de ESTE espacio dentro del lock, antes del chequeo de solapamiento.
@@ -64,7 +64,7 @@ class ReservaService
             );
             $overlapStmt->execute(['id' => $espacioId, 'inicio' => $inicio, 'fin' => $fin]);
             if ((int) $overlapStmt->fetch()['n'] > 0) {
-                throw new ReservaConflictException('Este espacio ya no está disponible, elige otro.');
+                throw new ReservaConflictException('Este espacio ya no estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ disponible, elige otro.');
             }
 
             $tarifaHora = Espacio::tarifaHora();
@@ -88,7 +88,7 @@ class ReservaService
             $attempts = 0;
             do {
                 if ($attempts++ > 5) {
-                    throw new ReservaCodigoException('No se pudo generar un código único de reserva. Intenta nuevamente.');
+                    throw new ReservaCodigoException('No se pudo generar un cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºnico de reserva. Intenta nuevamente.');
                 }
                 $codigo = Reserva::generarCodigo($pdo);
                 try {

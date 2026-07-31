@@ -1,7 +1,7 @@
 /**
  * Renderiza un grid de espacios en `container` a partir de espacios[] con {codigo, estado_ventana}.
  * `selectedId` marca visualmente el espacio elegido (estado 'seleccionado', puramente de UI).
- * `onSelect(espacio)` se invoca solo si el espacio está en estado 'disponible'.
+ * `onSelect(espacio)` se invoca solo si el espacio estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ en estado 'disponible'.
  */
 function renderParkingGrid(container, espacios, { selectedId = null, onSelect = null } = {}) {
     container.innerHTML = '';

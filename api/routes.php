@@ -16,6 +16,8 @@ use App\Controllers\Admin\EspacioAdminController;
 use App\Controllers\Admin\MetodoPagoAdminController;
 use App\Controllers\Admin\ConfiguracionController as AdminConfiguracionController;
 use App\Controllers\Admin\CancelacionAdminController;
+use App\Controllers\Admin\UsuarioAdminController;
+use App\Controllers\Admin\ClienteAdminController;
 
 $router->get('config', fn () => (new ConfigController())->index());
 $router->get('metodos-pago', fn () => (new ConfigController())->metodosPago());
@@ -42,6 +44,7 @@ $router->get('admin/reportes/resumen', fn () => (new DashboardController())->rep
 $router->get('admin/alertas-llegada', fn () => (new DashboardController())->alertasLlegada());
 
 $router->get('admin/reservas', fn () => (new ReservaAdminController())->listar());
+$router->get('admin/reservas/calendario-resumen', fn () => (new ReservaAdminController())->calendarioResumen());
 $router->get('admin/reservas/{id}', fn ($id) => (new ReservaAdminController())->ver($id));
 $router->patch('admin/reservas/{id}/estado', fn ($id) => (new ReservaAdminController())->actualizarEstado($id));
 $router->post('admin/reservas/{id}/pago-saldo', fn ($id) => (new ReservaAdminController())->registrarPagoSaldo($id));
@@ -64,3 +67,10 @@ $router->patch('admin/configuracion', fn () => (new AdminConfiguracionController
 $router->get('admin/cancelaciones', fn () => (new CancelacionAdminController())->listar());
 $router->get('admin/cancelaciones/{id}/comprobante', fn ($id) => (new CancelacionAdminController())->comprobante($id));
 $router->patch('admin/cancelaciones/{id}', fn ($id) => (new CancelacionAdminController())->decidir($id));
+
+$router->get('admin/usuarios', fn () => (new UsuarioAdminController())->listar());
+$router->post('admin/usuarios', fn () => (new UsuarioAdminController())->crear());
+$router->patch('admin/usuarios/{id}', fn ($id) => (new UsuarioAdminController())->actualizar($id));
+
+$router->get('admin/clientes', fn () => (new ClienteAdminController())->listar());
+$router->get('admin/clientes/{celular}/historial', fn ($celular) => (new ClienteAdminController())->historial($celular));

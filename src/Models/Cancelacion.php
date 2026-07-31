@@ -85,4 +85,3 @@ class Cancelacion
         return ['data' => $rows, 'total' => $total, 'page' => $page, 'per_page' => $perPage];
     }
 }
-

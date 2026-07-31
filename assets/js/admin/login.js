@@ -11,7 +11,7 @@ document.getElementById('login-form').addEventListener('submit', async (ev) => {
         AdminApi.setCsrfToken(admin.csrf_token);
         window.location.href = window.APP_BASE + '/admin/dashboard.php';
     } catch (e) {
-        errorEl.textContent = e.status === 401 ? 'Correo o contraseña incorrectos.' : 'No se pudo iniciar sesión.';
+        errorEl.textContent = e.status === 401 ? 'Correo o contraseÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±a incorrectos.' : 'No se pudo iniciar sesiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.';
         errorEl.hidden = false;
     }
 });

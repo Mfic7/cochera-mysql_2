@@ -52,8 +52,8 @@ class PagoAdminController extends Controller
         $input = $this->input();
 
         $this->handleValidation(fn () => (new Validator($input))
-            ->required('accion', 'Acción')
-            ->in('accion', ['aprobar', 'rechazar'], 'Acción')
+            ->required('accion', 'AcciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n')
+            ->in('accion', ['aprobar', 'rechazar'], 'AcciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n')
             ->validate());
 
         $pago = Pago::find((int) $id);

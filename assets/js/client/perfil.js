@@ -39,11 +39,11 @@ const Perfil = (() => {
         const codigo = el['buscar-codigo'].value.trim();
         const celular = el['buscar-celular'].value.replace(/[\s-]/g, '');
 
-        if (!codigo) return showError('buscar-banner-error', 'Ingresa el código de tu reserva.');
-        if (!/^9\d{8}$/.test(celular)) return showError('buscar-banner-error', 'Ingresa un celular válido de 9 dígitos.');
+        if (!codigo) return showError('buscar-banner-error', 'Ingresa el cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo de tu reserva.');
+        if (!/^9\d{8}$/.test(celular)) return showError('buscar-banner-error', 'Ingresa un celular vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido de 9 dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­gitos.');
 
         el['btn-buscar'].disabled = true;
-        el['btn-buscar'].textContent = 'Buscando…';
+        el['btn-buscar'].textContent = 'BuscandoÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦';
 
         try {
             const reserva = await Api.buscarReserva(codigo, celular);
@@ -77,7 +77,7 @@ const Perfil = (() => {
     function etiquetaEstado(estado) {
         return {
             pendiente_pago: 'Pendiente de pago',
-            en_validacion: 'Pago en validación',
+            en_validacion: 'Pago en validaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n',
             adelanto_pagado: 'Adelanto confirmado',
             pago_completo: 'Pago completo',
             cancelada: 'Cancelada',
@@ -100,19 +100,19 @@ const Perfil = (() => {
 
         el['aviso-plazo'].hidden = false;
         el['aviso-plazo'].textContent = puedeCancelar
-            ? 'Tienes hasta 20 minutos antes de tu hora de reserva para cancelarla. Pasado ese tiempo no hay devolución de dinero.'
-            : 'El plazo para cancelar sin costo venció. Ya no es posible solicitar la devolución del adelanto.';
+            ? 'Tienes hasta 20 minutos antes de tu hora de reserva para cancelarla. Pasado ese tiempo no hay devoluciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de dinero.'
+            : 'El plazo para cancelar sin costo venciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³. Ya no es posible solicitar la devoluciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n del adelanto.';
 
-        // Mostrar siempre el botón para que el usuario pueda detallar la solicitud.
-        // Si no está en plazo, se permitirá ver el formulario pero el botón de envío quedará deshabilitado.
+        // Mostrar siempre el botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n para que el usuario pueda detallar la solicitud.
+        // Si no estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ en plazo, se permitirÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ ver el formulario pero el botÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de envÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o quedarÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ deshabilitado.
         el['btn-abrir-cancelacion'].hidden = false;
         el['btn-solicitar-cancelacion'].disabled = !puedeCancelar;
         if (!puedeCancelar) {
-            showError('cancelacion-banner-error', 'El plazo para solicitar la devolución venció. No podrás enviar la solicitud, pero puedes detallar la información.');
+            showError('cancelacion-banner-error', 'El plazo para solicitar la devoluciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n venciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³. No podrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡s enviar la solicitud, pero puedes detallar la informaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.');
         } else {
             hideError('cancelacion-banner-error');
         }
-        // Ocultamos el panel si ya no puede cancelar (evita abrirlo automáticamente)
+        // Ocultamos el panel si ya no puede cancelar (evita abrirlo automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ticamente)
         if (!puedeCancelar) el['panel-cancelacion'].hidden = true;
     }
 
@@ -120,12 +120,12 @@ const Perfil = (() => {
         el['cancelacion-motivo'].value = '';
         el['cancelacion-numero-operacion'].value = '';
         el['cancelacion-comprobante'].value = '';
-        // Mostrar el panel incluso si el plazo venció; el envío quedará bloqueado con aviso
+        // Mostrar el panel incluso si el plazo venciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³; el envÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o quedarÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ bloqueado con aviso
         const inicio = new Date(state.reserva.fecha_hora_inicio).getTime();
         const minutosRestantes = (inicio - Date.now()) / 60000;
         const puedeCancelar = minutosRestantes >= 20;
         if (!puedeCancelar) {
-            showError('cancelacion-banner-error', 'El plazo para solicitar la devolución venció. No podrás enviar la solicitud, pero puedes dejar los detalles para el admin.');
+            showError('cancelacion-banner-error', 'El plazo para solicitar la devoluciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n venciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³. No podrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡s enviar la solicitud, pero puedes dejar los detalles para el admin.');
             el['btn-solicitar-cancelacion'].disabled = true;
         } else {
             hideError('cancelacion-banner-error');
@@ -142,13 +142,13 @@ const Perfil = (() => {
         const numeroOperacion = el['cancelacion-numero-operacion'].value.trim();
         const comprobante = el['cancelacion-comprobante'].files[0];
 
-        if (!tipo) return showError('cancelacion-banner-error', 'Selecciona el tipo de cancelación.');
-        if (!motivo) return showError('cancelacion-banner-error', 'Ingresa la descripción de la cancelación.');
-        if (!numeroOperacion) return showError('cancelacion-banner-error', 'Ingresa el número de operación.');
+        if (!tipo) return showError('cancelacion-banner-error', 'Selecciona el tipo de cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.');
+        if (!motivo) return showError('cancelacion-banner-error', 'Ingresa la descripciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de la cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.');
+        if (!numeroOperacion) return showError('cancelacion-banner-error', 'Ingresa el nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºmero de operaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.');
         if (!comprobante) return showError('cancelacion-banner-error', 'Adjunta el comprobante de pago.');
 
         el['btn-solicitar-cancelacion'].disabled = true;
-        el['btn-solicitar-cancelacion'].textContent = 'Enviando…';
+        el['btn-solicitar-cancelacion'].textContent = 'EnviandoÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦';
 
         try {
             const formData = new FormData();
@@ -160,12 +160,12 @@ const Perfil = (() => {
 
             await Api.solicitarCancelacion(state.reserva.id, formData);
             el['panel-cancelacion'].innerHTML =
-                '<div class="panel-message"><strong>Solicitud enviada.</strong><p>Hemos recibido tu solicitud de cancelación y el equipo la revisará.</p></div>';
+                '<div class="panel-message"><strong>Solicitud enviada.</strong><p>Hemos recibido tu solicitud de cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n y el equipo la revisarÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡.</p></div>';
             stopPolling();
         } catch (e) {
             showError('cancelacion-banner-error', e.data?.error || 'No se pudo enviar la solicitud.');
             el['btn-solicitar-cancelacion'].disabled = false;
-            el['btn-solicitar-cancelacion'].textContent = 'Enviar solicitud de cancelación';
+            el['btn-solicitar-cancelacion'].textContent = 'Enviar solicitud de cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n';
         }
     }
 

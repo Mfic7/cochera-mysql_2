@@ -21,7 +21,7 @@ abstract class Controller
     }
 
     /**
-     * Lee el cuerpo de la petición de forma robusta para JSON, x-www-form-urlencoded
+     * Lee el cuerpo de la peticiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de forma robusta para JSON, x-www-form-urlencoded
      * y multipart/form-data (incluyendo PATCH/POST desde el panel admin y del usuario).
      */
     protected function input(): array
@@ -125,7 +125,7 @@ abstract class Controller
     {
         $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
         if (!AdminAuth::verifyCsrf($token)) {
-            $this->error('Token CSRF inválido', 403);
+            $this->error('Token CSRF invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido', 403);
         }
     }
 
@@ -134,7 +134,7 @@ abstract class Controller
         try {
             return $fn();
         } catch (ValidationException $e) {
-            $this->error('Datos inválidos', 422, ['errores' => $e->errors]);
+            $this->error('Datos invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos', 422, ['errores' => $e->errors]);
         }
     }
 }

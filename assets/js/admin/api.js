@@ -73,5 +73,10 @@ const AdminApi = (() => {
         reporteMetodosPago: (desde, hasta) => request(`/admin/reportes/metodos-pago?desde=${desde}&hasta=${hasta}`),
         reporteResumen: (periodo) => request(`/admin/reportes/resumen?periodo=${periodo}`),
         alertasLlegada: () => request('/admin/alertas-llegada'),
+        usuarios: () => request('/admin/usuarios'),
+        crearUsuario: (data) => request('/admin/usuarios', { method: 'POST', body: JSON.stringify(data) }),
+        actualizarUsuario: (id, data) => request(`/admin/usuarios/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+        clientes: (busqueda) => request('/admin/clientes' + (busqueda ? `?busqueda=${encodeURIComponent(busqueda)}` : '')),
+        historialCliente: (celular) => request(`/admin/clientes/${encodeURIComponent(celular)}/historial`),
     };
 })();

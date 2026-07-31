@@ -368,8 +368,6 @@ input:focus, select:focus, textarea:focus {
 .sidebar-item:hover { background: #1f242c; color: #fff; }
 .sidebar-item.active { background: #1f242c; color: var(--gold); border-left-color: var(--gold); }
 
-/* En celular: el sidebar deja de ser una columna vertical "sticky" (que se sobreponía
-   al contenido) y pasa a ser una barra de pestañas horizontal deslizable arriba. */
 @media (max-width: 900px) {
     .sidebar {
         position: static;
@@ -402,7 +400,6 @@ input:focus, select:focus, textarea:focus {
 .search-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 @media (max-width: 800px) { .search-grid { grid-template-columns: 1fr; } }
 
-/* El aviso "aún no hay datos" se oculta solo cuando #buscar-resultado deja de tener 'hidden' */
 #buscar-resultado:not([hidden]) ~ #buscar-resultado-vacio { display: none; }
 #buscar-resultado-vacio { text-align: center; padding: 30px 10px; }
 
@@ -440,8 +437,6 @@ input:focus, select:focus, textarea:focus {
 }
 .vehicle-icon-group text { font-size: 22px; }
 
-/* El emoji 🚗 "mira" hacia la izquierda en la mayoría de fuentes; lo volteamos
-   para que apunte hacia la derecha (la dirección real de avance del recorrido). */
 .vehicle-car-icon {
     transform: scaleX(-1);
     transform-origin: center;

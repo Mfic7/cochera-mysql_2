@@ -58,3 +58,4 @@ class MetodoPagoAdminController extends Controller
         $this->json(['ok' => true, 'qr_image_path' => $path]);
     }
 }
+

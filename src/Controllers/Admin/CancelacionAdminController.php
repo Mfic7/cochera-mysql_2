@@ -21,7 +21,7 @@ class CancelacionAdminController extends Controller
         $this->json(Cancelacion::listar($estado ?: null, $page, 20));
     }
 
-    /** Sirve la imagen del comprobante de forma protegida (requiere sesión admin). */
+    /** Sirve la imagen del comprobante de forma protegida (requiere sesiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n admin). */
     public function comprobante(string $id): void
     {
         $this->requireAdmin();
@@ -49,9 +49,9 @@ class CancelacionAdminController extends Controller
 
     /**
      * El admin decide sobre la solicitud.
-     * accion = 'aprobar': si aún faltan >= 20 min para la hora de ingreso, cancela la reserva y marca "aprobada"
+     * accion = 'aprobar': si aÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºn faltan >= 20 min para la hora de ingreso, cancela la reserva y marca "aprobada"
      *          (a devolver el adelanto manualmente); si ya no cumple el plazo, NO cancela y responde 'fuera_plazo'.
-     * accion = 'rechazar': marca la solicitud como rechazada sin tocar la reserva (ej. datos de pago no válidos).
+     * accion = 'rechazar': marca la solicitud como rechazada sin tocar la reserva (ej. datos de pago no vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos).
      */
     public function decidir(string $id): void
     {
@@ -72,14 +72,14 @@ class CancelacionAdminController extends Controller
         }
 
         if ($accion !== 'aprobar') {
-            $this->error('Acción inválida.', 422);
+            $this->error('AcciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lida.', 422);
             return;
         }
 
         $this->aprobarSolicitud((int) $id, $reserva, $admin, $input['nota'] ?? null);
     }
 
-    /** Valida que la solicitud exista, esté pendiente, y que su reserva exista. Devuelve [cancelacion, reserva] o null. */
+    /** Valida que la solicitud exista, estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© pendiente, y que su reserva exista. Devuelve [cancelacion, reserva] o null. */
     private function cargarSolicitudValida(string $id): ?array
     {
         $cancelacion = Cancelacion::find((int) $id);
@@ -138,7 +138,7 @@ class CancelacionAdminController extends Controller
                 $id,
                 'fuera_plazo',
                 $admin['id'],
-                'Fuera del plazo de 20 minutos antes de la hora de ingreso. No procede devolución.'
+                'Fuera del plazo de 20 minutos antes de la hora de ingreso. No procede devoluciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.'
             );
             $pdo->commit();
         } catch (\Throwable $e) {
@@ -148,7 +148,7 @@ class CancelacionAdminController extends Controller
         $this->json([
             'ok' => false,
             'estado' => 'fuera_plazo',
-            'mensaje' => 'Esta solicitud está fuera del plazo de cancelación (20 minutos antes de la hora de ingreso). No corresponde devolución del dinero.',
+            'mensaje' => 'Esta solicitud estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ fuera del plazo de cancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n (20 minutos antes de la hora de ingreso). No corresponde devoluciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n del dinero.',
         ]);
     }
 
@@ -166,7 +166,7 @@ class CancelacionAdminController extends Controller
                 'cancelada',
                 'admin',
                 $admin['id'],
-                'Cancelación aprobada dentro del plazo. Adelanto de S/ ' . $reserva['monto_adelanto'] . ' pendiente de devolución.'
+                'CancelaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n aprobada dentro del plazo. Adelanto de S/ ' . $reserva['monto_adelanto'] . ' pendiente de devoluciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.'
             );
             Cancelacion::marcar($pdo, $id, 'aprobada', $admin['id'], $nota);
             $pdo->commit();
@@ -182,4 +182,3 @@ class CancelacionAdminController extends Controller
         ]);
     }
 }
-

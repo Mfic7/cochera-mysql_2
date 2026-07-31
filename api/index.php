@@ -7,8 +7,8 @@ require_once __DIR__ . '/../src/Autoload.php';
 use App\Router;
 use App\Support\Response;
 
-// CORS restringido: solo se permiten los orígenes conocidos de esta app (no '*').
-// Ajusta ALLOWED_ORIGINS si sirves el frontend desde otro dominio (ej. otro túnel de ngrok).
+// CORS restringido: solo se permiten los orÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­genes conocidos de esta app (no '*').
+// Ajusta ALLOWED_ORIGINS si sirves el frontend desde otro dominio (ej. otro tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºnel de ngrok).
 const ALLOWED_ORIGINS = [
     'http://localhost',
     'http://127.0.0.1',
@@ -22,7 +22,7 @@ foreach (ALLOWED_ORIGINS as $permitido) {
         break;
     }
 }
-// También se permite cualquier subdominio *.ngrok-free.dev o *.ngrok.io (túneles de desarrollo).
+// TambiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©n se permite cualquier subdominio *.ngrok-free.dev o *.ngrok.io (tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºneles de desarrollo).
 if (!$originPermitido && preg_match('#^https://[a-z0-9-]+\.ngrok(-free)?\.(dev|io|app)$#i', $origin)) {
     $originPermitido = true;
 }
@@ -70,4 +70,3 @@ try {
     error_log($e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
     Response::error('Error interno del servidor', 500);
 }
-

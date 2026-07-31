@@ -126,4 +126,18 @@ class Reserva
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    /** Conteo de reservas por día para un mes dado, usado por la vista de Calendario. */
+    public static function resumenPorMes(int $anio, int $mes): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT DATE(fecha_hora_inicio) AS fecha, COUNT(*) AS total
+             FROM reservas
+             WHERE YEAR(fecha_hora_inicio) = :anio AND MONTH(fecha_hora_inicio) = :mes
+               AND estado != 'cancelada'
+             GROUP BY fecha"
+        );
+        $stmt->execute(['anio' => $anio, 'mes' => $mes]);
+        return $stmt->fetchAll();
+    }
 }

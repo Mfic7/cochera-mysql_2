@@ -30,7 +30,7 @@ class ConfigController extends Controller
     }
 
     /**
-     * Guarda los cambios del formulario "Configuración" del panel admin.
+     * Guarda los cambios del formulario "ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n" del panel admin.
      * Debe registrarse en routes.php como PUT/PATCH/POST hacia /admin/config
      */
     public function actualizar(): void
@@ -40,9 +40,9 @@ class ConfigController extends Controller
         $data = $this->handleValidation(function () use ($input) {
             return (new Validator($input))
                 ->required('nombre_negocio', 'Nombre del negocio')
-                ->required('direccion', 'Dirección')
+                ->required('direccion', 'DirecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n')
                 ->required('horario', 'Horario')
-                ->required('telefono', 'Teléfono')
+                ->required('telefono', 'TelÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©fono')
                 ->required('tarifa_hora', 'Tarifa por hora')
                 ->numeric('tarifa_hora', 'Tarifa por hora')
                 ->required('hold_minutes', 'Minutos de bloqueo')
@@ -66,4 +66,3 @@ class ConfigController extends Controller
         $this->json(MetodoPago::activos());
     }
 }
-

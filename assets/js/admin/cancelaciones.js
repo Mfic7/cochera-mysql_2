@@ -13,11 +13,11 @@ const AdminCancelaciones = (() => {
                 <td>${esc(c.cliente_nombre)}</td>
                 <td>${esc(c.cliente_celular)}</td>
                 <td>${esc(c.motivo)}</td>
-                <td>${esc(c.numero_operacion || '—')}</td>
-                <td>${c.revisado ? 'Sí' : 'No'}</td>
+                <td>${esc(c.numero_operacion || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â')}</td>
+                <td>${c.revisado ? 'SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­' : 'No'}</td>
                 <td>${esc(c.created_at)}</td>
-                <td>${c.comprobante_path ? `<a class="btn-sm" href="${window.APP_BASE}/storage/${encodeURIComponent(c.comprobante_path)}" target="_blank">Ver</a>` : '—'}</td>
-                <td>${c.revisado ? '—' : `<button class="btn-sm approve" data-revisar="${c.id}">Marcar revisado</button>`}</td>
+                <td>${c.comprobante_path ? `<a class="btn-sm" href="${window.APP_BASE}/storage/${encodeURIComponent(c.comprobante_path)}" target="_blank">Ver</a>` : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
+                <td>${c.revisado ? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â' : `<button class="btn-sm approve" data-revisar="${c.id}">Marcar revisado</button>`}</td>
             </tr>`).join('');
 
         document.querySelectorAll('[data-revisar]').forEach((b) => b.addEventListener('click', () => marcarRevisado(b.dataset.revisar)));

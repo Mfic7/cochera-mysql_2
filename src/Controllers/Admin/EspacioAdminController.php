@@ -22,9 +22,9 @@ class EspacioAdminController extends Controller
         $input = $this->input();
 
         $this->handleValidation(fn () => (new Validator($input))
-            ->required('codigo', 'Código')
-            ->required('numero', 'Número')
-            ->numeric('numero', 'Número')
+            ->required('codigo', 'CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo')
+            ->required('numero', 'NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºmero')
+            ->numeric('numero', 'NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºmero')
             ->validate());
 
         $stmt = Database::connection()->prepare(
