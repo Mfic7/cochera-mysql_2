@@ -56,6 +56,7 @@ $router->patch('admin/espacios/{id}', fn ($id) => (new EspacioAdminController())
 
 $router->get('admin/metodos-pago', fn () => (new MetodoPagoAdminController())->listar());
 $router->patch('admin/metodos-pago/{tipo}', fn ($tipo) => (new MetodoPagoAdminController())->actualizar($tipo));
+$router->post('admin/metodos-pago/{tipo}/qr', fn ($tipo) => (new MetodoPagoAdminController())->subirQr($tipo));
 
 $router->get('admin/configuracion', fn () => (new AdminConfiguracionController())->ver());
 $router->patch('admin/configuracion', fn () => (new AdminConfiguracionController())->actualizar());

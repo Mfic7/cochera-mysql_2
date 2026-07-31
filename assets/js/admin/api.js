@@ -64,6 +64,7 @@ const AdminApi = (() => {
 
         metodosPago: () => request('/admin/metodos-pago'),
         actualizarMetodoPago: (tipo, data) => request(`/admin/metodos-pago/${tipo}`, { method: 'PATCH', body: JSON.stringify(data) }),
+        subirQrMetodoPago: (tipo, formData) => request(`/admin/metodos-pago/${tipo}/qr`, { method: 'POST', body: formData }),
 
         configuracion: () => request('/admin/configuracion'),
         actualizarConfiguracion: (data) => request('/admin/configuracion', { method: 'PATCH', body: JSON.stringify(data) }),

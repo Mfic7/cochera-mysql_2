@@ -444,33 +444,64 @@ const AdminDashboard = (() => {
     async function loadMetodosPago() {
         const rows = await AdminApi.metodosPago();
         const label = { yape: 'Yape', plin: 'Plin', transferencia: 'Transferencia' };
-        document.getElementById('metodos-pago-cards').innerHTML = rows.map((m) => `
-            <div class="panel">
-                <h3>${label[m.tipo]}</h3>
+        const subtitulo = { yape: 'Pago móvil con Yape', plin: 'Pago móvil con Plin', transferencia: 'Transferencia bancaria' };
+        const monograma = { yape: 'Y', plin: 'P', transferencia: '🏦' };
+
+        document.getElementById('metodos-pago-cards').innerHTML = rows.map((m) => {
+            const qrSrc = m.qr_image_path ? `${window.APP_BASE}/storage/${m.qr_image_path}?v=${Date.now()}` : '';
+            return `
+            <div class="metodo-pago-card metodo-pago-${m.tipo}">
+                <div class="metodo-pago-header">
+                    <span class="metodo-pago-badge">${monograma[m.tipo]}</span>
+                    <div><h3>${label[m.tipo]}</h3><span class="metodo-pago-sub">${subtitulo[m.tipo]}</span></div>
+                </div>
                 <form data-metodo-form="${m.tipo}">
                     <div class="form-field"><label>Titular</label><input name="titular" value="${esc(m.titular)}"></div>
                     <div class="form-field"><label>Número de cuenta</label><input name="numero_cuenta" value="${esc(m.numero_cuenta)}"></div>
                     <div class="form-field"><label>Banco (opcional)</label><input name="banco" value="${esc(m.banco || '')}"></div>
-                    <div class="form-field"><label>Código QR</label><input type="file" name="qr" accept="image/*"></div>
-                    <button class="btn-sm" type="submit">Guardar</button>
+
+                    <label class="metodo-pago-qr-label">Código QR</label>
+                    <div class="metodo-pago-qr-drop ${qrSrc ? 'has-image' : ''}" data-qr-drop>
+                        <img class="metodo-pago-qr-preview" src="${qrSrc}" alt="QR de ${label[m.tipo]}">
+                        <div class="metodo-pago-qr-placeholder-icon">📷</div>
+                        <span class="metodo-pago-qr-text">Haz clic para subir el código QR</span>
+                        <div class="metodo-pago-qr-overlay">Cambiar QR</div>
+                        <input type="file" name="qr" accept="image/*" class="metodo-pago-qr-input">
+                    </div>
+
+                    <button class="btn-metodo-guardar" type="submit">Guardar cambios</button>
                 </form>
-            </div>`).join('');
+            </div>`;
+        }).join('');
+
+        // La zona de QR completa es clicable y muestra vista previa instantánea al elegir archivo
+        document.querySelectorAll('[data-qr-drop]').forEach((drop) => {
+            const input = drop.querySelector('.metodo-pago-qr-input');
+            const preview = drop.querySelector('.metodo-pago-qr-preview');
+            drop.addEventListener('click', () => input.click());
+            input.addEventListener('change', () => {
+                if (input.files[0]) {
+                    preview.src = URL.createObjectURL(input.files[0]);
+                    drop.classList.add('has-image');
+                }
+            });
+        });
 
         document.querySelectorAll('[data-metodo-form]').forEach((form) => form.addEventListener('submit', async (ev) => {
             ev.preventDefault();
             const tipo = form.dataset.metodoForm;
             const qrInput = form.querySelector('[name="qr"]');
+            const datos = Object.fromEntries(new FormData(form).entries());
+            delete datos.qr;
             try {
+                await AdminApi.actualizarMetodoPago(tipo, datos);
                 if (qrInput.files[0]) {
-                    const fd = new FormData(form);
-                    await fetch(`${window.APP_BASE}/api/index.php/admin/metodos-pago/${tipo}`, {
-                        method: 'PATCH', body: fd, credentials: 'same-origin',
-                        headers: { 'X-CSRF-Token': sessionStorage.getItem('csrf_token') || '' },
-                    });
-                } else {
-                    await AdminApi.actualizarMetodoPago(tipo, Object.fromEntries(new FormData(form).entries()));
+                    const fd = new FormData();
+                    fd.append('qr', qrInput.files[0]);
+                    await AdminApi.subirQrMetodoPago(tipo, fd);
                 }
                 toast('Método de pago actualizado.');
+                loadMetodosPago();
             } catch (e) {
                 console.warn('No se pudo actualizar el método de pago:', e);
                 toast('No se pudo actualizar.');

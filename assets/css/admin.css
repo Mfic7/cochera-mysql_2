@@ -271,3 +271,84 @@ table tr:last-child td { border-bottom: none; }
     line-height: 1;
 }
 .alerta-llegada-close:hover { background: rgba(0,0,0,0.35); }
+
+
+
+
+
+
+
+
+
+/* ============ MÉTODOS DE PAGO: tarjetas con identidad de marca ============ */
+.metodo-pago-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    border-top: 4px solid var(--metodo-color, var(--gold));
+    box-shadow: 0 1px 3px rgba(15,18,24,0.04);
+    transition: box-shadow .2s ease;
+}
+.metodo-pago-card:hover { box-shadow: 0 6px 20px rgba(15,18,24,0.08); }
+
+.metodo-pago-card.metodo-pago-yape { --metodo-color: #9333ea; --metodo-color-soft: #f3e8ff; }
+.metodo-pago-card.metodo-pago-plin { --metodo-color: #06b6ad; --metodo-color-soft: #e0fbf9; }
+.metodo-pago-card.metodo-pago-transferencia { --metodo-color: #1f2430; --metodo-color-soft: #eef0f3; }
+
+.metodo-pago-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.metodo-pago-badge {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: var(--metodo-color-soft); color: var(--metodo-color);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800; flex-shrink: 0;
+}
+.metodo-pago-header h3 { margin: 0; font-size: 15px; color: var(--ink); }
+.metodo-pago-sub { font-size: 11px; color: var(--muted); }
+
+.metodo-pago-card .form-field input:focus {
+    outline: none;
+    border-color: var(--metodo-color);
+    box-shadow: 0 0 0 3px var(--metodo-color-soft);
+}
+
+.metodo-pago-qr-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.metodo-pago-qr-drop {
+    position: relative;
+    height: 130px;
+    border-radius: 10px;
+    border: 1.5px dashed var(--border);
+    background: #fafbfc;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; cursor: pointer; overflow: hidden;
+    margin-bottom: 16px;
+    transition: border-color .15s ease, background .15s ease;
+}
+.metodo-pago-qr-drop:hover { border-color: var(--metodo-color); background: var(--metodo-color-soft); }
+.metodo-pago-qr-drop.has-image { border-style: solid; }
+
+.metodo-pago-qr-preview {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+    background: #fff; padding: 10px; display: none;
+}
+.metodo-pago-qr-drop.has-image .metodo-pago-qr-preview { display: block; }
+.metodo-pago-qr-drop.has-image .metodo-pago-qr-placeholder-icon,
+.metodo-pago-qr-drop.has-image .metodo-pago-qr-text { display: none; }
+
+.metodo-pago-qr-placeholder-icon { font-size: 26px; color: var(--muted); }
+.metodo-pago-qr-text { font-size: 11.5px; color: var(--muted); text-align: center; padding: 0 10px; }
+
+.metodo-pago-qr-overlay {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(15,18,24,0.55); color: #fff; font-size: 12px; font-weight: 700;
+    opacity: 0; transition: opacity .15s ease;
+}
+.metodo-pago-qr-drop.has-image:hover .metodo-pago-qr-overlay { opacity: 1; }
+.metodo-pago-qr-input { display: none; }
+
+.btn-metodo-guardar {
+    width: 100%; padding: 11px; border: none; border-radius: 10px;
+    background: var(--metodo-color); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+    transition: filter .15s ease, transform .1s ease;
+}
+.btn-metodo-guardar:hover { filter: brightness(0.9); transform: translateY(-1px); }

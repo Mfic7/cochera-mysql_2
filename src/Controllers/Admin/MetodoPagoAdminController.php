@@ -28,15 +28,33 @@ class MetodoPagoAdminController extends Controller
 
         MetodoPago::actualizar($tipo, $input);
 
-        if (isset($_FILES['qr']) && $_FILES['qr']['error'] === UPLOAD_ERR_OK) {
-            try {
-                $path = FileUploadService::guardarQr($_FILES['qr'], $tipo);
-                MetodoPago::actualizarQr($tipo, $path);
-            } catch (FileUploadException $e) {
-                $this->error($e->getMessage(), 422);
-            }
+        $this->json(['ok' => true]);
+    }
+
+    /**
+     * Sube el QR por separado, siempre vía POST. PHP solo puebla $_FILES
+     * automáticamente en peticiones POST — en PATCH el archivo nunca llega
+     * de forma confiable entre distintos entornos (Apache/mod_php, XAMPP,
+     * PHP-FPM, etc.), así que este endpoint evita depender de parsear el
+     * archivo a mano dentro de un multipart de PATCH.
+     */
+    public function subirQr(string $tipo): void
+    {
+        $this->requireAdmin();
+        $this->requireCsrf();
+
+        if (!isset($_FILES['qr']) || $_FILES['qr']['error'] !== UPLOAD_ERR_OK) {
+            $this->error('Adjunta una imagen de código QR.', 422);
         }
 
-        $this->json(['ok' => true]);
+        try {
+            $path = FileUploadService::guardarQr($_FILES['qr'], $tipo);
+        } catch (FileUploadException $e) {
+            $this->error($e->getMessage(), 422);
+        }
+
+        MetodoPago::actualizarQr($tipo, $path);
+
+        $this->json(['ok' => true, 'qr_image_path' => $path]);
     }
 }
